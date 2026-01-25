@@ -742,12 +742,15 @@ class FreightCalculator:
         # In port - working
         working_days = load_days + discharge_days - (cargo.load_turn_time + cargo.discharge_turn_time) / 24
         vlsfo_working = working_days * vessel.port_working_vlsfo
-        
+
         # In port - idle (waiting + turn times)
         idle_days = waiting_days + (cargo.load_turn_time + cargo.discharge_turn_time) / 24
         vlsfo_idle = idle_days * vessel.port_idle_vlsfo
-        
+
         # Total fuel
+        # NOTE: Port MGO consumption is set to 0 per datathon assumptions.
+        # MGO is typically only consumed at sea for auxiliary engines. If port MGO
+        # consumption is required, add: mgo_port = port_days * vessel.port_mgo
         vlsfo_consumed = vlsfo_ballast + vlsfo_laden + vlsfo_working + vlsfo_idle
         mgo_consumed = mgo_ballast + mgo_laden
         
