@@ -942,6 +942,13 @@ class PortDistanceManager:
         from_options = self._normalize_port(port_from)
         to_options = self._normalize_port(port_to)
 
+        # Same-port check — distance is 0 if ports resolve to the same name
+        common = set(from_options) & set(to_options)
+        if common:
+            matched = next(iter(common))
+            self._lookup_stats['csv'] += 1
+            return 0.0, DistanceSource.CSV, matched, matched
+
         # Try all combinations in main distance table
         for f in from_options:
             for t in to_options:

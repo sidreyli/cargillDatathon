@@ -1,0 +1,212 @@
+import type {
+  Vessel, Cargo, VoyageResult, Assignment, PortfolioResult,
+  ScenarioPoint, TippingPoint, PortDelay, ModelInfo, ChatMessage
+} from '../types';
+
+// ─── Vessels ───────────────────────────────────────────────
+export const mockVessels: Vessel[] = [
+  { name: 'Ann Bell', dwt: 180803, hire_rate: 11750, speed_laden: 13.5, speed_laden_eco: 12.0, speed_ballast: 14.5, speed_ballast_eco: 12.5, current_port: 'Qingdao', etd: '25 Feb 2026', bunker_rob_vlsfo: 401.3, bunker_rob_mgo: 45.1, is_cargill: true },
+  { name: 'Ocean Horizon', dwt: 181550, hire_rate: 15750, speed_laden: 13.8, speed_laden_eco: 12.3, speed_ballast: 14.8, speed_ballast_eco: 12.8, current_port: 'Map Ta Phut', etd: '1 Mar 2026', bunker_rob_vlsfo: 265.8, bunker_rob_mgo: 64.3, is_cargill: true },
+  { name: 'Pacific Glory', dwt: 182320, hire_rate: 14800, speed_laden: 13.5, speed_laden_eco: 12.2, speed_ballast: 14.2, speed_ballast_eco: 12.7, current_port: 'Gwangyang', etd: '10 Mar 2026', bunker_rob_vlsfo: 601.9, bunker_rob_mgo: 98.1, is_cargill: true },
+  { name: 'Golden Ascent', dwt: 179965, hire_rate: 13950, speed_laden: 13.0, speed_laden_eco: 11.8, speed_ballast: 14.0, speed_ballast_eco: 12.3, current_port: 'Fangcheng', etd: '8 Mar 2026', bunker_rob_vlsfo: 793.3, bunker_rob_mgo: 17.1, is_cargill: true },
+];
+
+// ─── Cargoes ───────────────────────────────────────────────
+export const mockCargoes: Cargo[] = [
+  { name: 'EGA Bauxite', customer: 'EGA', commodity: 'Bauxite', quantity: 180000, quantity_tolerance: 0.10, laycan_start: '2 Apr 2026', laycan_end: '10 Apr 2026', freight_rate: 23.0, load_port: 'Kamsar', discharge_port: 'Qingdao', load_rate: 30000, discharge_rate: 25000, port_cost_load: 0, port_cost_discharge: 0, commission: 0.0125, is_cargill: true },
+  { name: 'BHP Iron Ore', customer: 'BHP', commodity: 'Iron Ore', quantity: 160000, quantity_tolerance: 0.10, laycan_start: '7 Mar 2026', laycan_end: '11 Mar 2026', freight_rate: 9.0, load_port: 'Port Hedland', discharge_port: 'Lianyungang', load_rate: 80000, discharge_rate: 30000, port_cost_load: 260000, port_cost_discharge: 120000, commission: 0.0375, is_cargill: true },
+  { name: 'CSN Iron Ore', customer: 'CSN', commodity: 'Iron Ore', quantity: 180000, quantity_tolerance: 0.10, laycan_start: '1 Apr 2026', laycan_end: '8 Apr 2026', freight_rate: 22.30, load_port: 'Itaguai', discharge_port: 'Qingdao', load_rate: 60000, discharge_rate: 30000, port_cost_load: 75000, port_cost_discharge: 90000, commission: 0.0375, is_cargill: true },
+];
+
+// ─── All Voyage Results (matrix) ───────────────────────────
+export const mockAllVoyages: VoyageResult[] = [
+  // Ann Bell
+  { vessel: 'Ann Bell', cargo: 'EGA Bauxite', speed_type: 'eco', can_make_laycan: true, arrival_date: '2026-04-04', laycan_end: '2026-04-10', days_margin: 6.0, total_days: 56.2, ballast_days: 18.3, laden_days: 22.1, load_days: 6.6, discharge_days: 7.3, waiting_days: 0, cargo_qty: 177303, gross_freight: 4077969, net_freight: 4027000, commission_cost: 50969, total_bunker_cost: 887400, bunker_cost_vlsfo: 742300, bunker_cost_mgo: 145100, hire_cost: 660350, port_costs: 0, misc_costs: 15000, net_profit: 2464250, tce: 38120, vlsfo_consumed: 1514, mgo_consumed: 224, bunker_port: 'Fujairah', bunker_savings: 48200 },
+  { vessel: 'Ann Bell', cargo: 'BHP Iron Ore', speed_type: 'eco', can_make_laycan: true, arrival_date: '2026-03-09', laycan_end: '2026-03-11', days_margin: 2.0, total_days: 32.5, ballast_days: 8.1, laden_days: 14.6, load_days: 2.2, discharge_days: 5.9, waiting_days: 0, cargo_qty: 176000, gross_freight: 1584000, net_freight: 1524600, commission_cost: 59400, total_bunker_cost: 498700, bunker_cost_vlsfo: 418200, bunker_cost_mgo: 80500, hire_cost: 381875, port_costs: 380000, misc_costs: 15000, net_profit: 249025, tce: 19920, vlsfo_consumed: 854, mgo_consumed: 124, bunker_port: 'Singapore', bunker_savings: 21400 },
+  { vessel: 'Ann Bell', cargo: 'CSN Iron Ore', speed_type: 'eco', can_make_laycan: false, arrival_date: '2026-04-14', laycan_end: '2026-04-08', days_margin: -6.0, total_days: 72.8, ballast_days: 28.4, laden_days: 30.1, load_days: 3.3, discharge_days: 6.5, waiting_days: 0, cargo_qty: 177303, gross_freight: 3953858, net_freight: 3805592, commission_cost: 148267, total_bunker_cost: 1142300, bunker_cost_vlsfo: 958200, bunker_cost_mgo: 184100, hire_cost: 855400, port_costs: 165000, misc_costs: 15000, net_profit: 1627892, tce: 37200, vlsfo_consumed: 1956, mgo_consumed: 284, bunker_port: 'Gibraltar', bunker_savings: 62100 },
+  // Ocean Horizon
+  { vessel: 'Ocean Horizon', cargo: 'EGA Bauxite', speed_type: 'eco', can_make_laycan: true, arrival_date: '2026-04-06', laycan_end: '2026-04-10', days_margin: 4.0, total_days: 55.8, ballast_days: 17.9, laden_days: 21.6, load_days: 6.6, discharge_days: 7.3, waiting_days: 0, cargo_qty: 178050, gross_freight: 4095150, net_freight: 4043966, commission_cost: 51184, total_bunker_cost: 912100, bunker_cost_vlsfo: 764800, bunker_cost_mgo: 147300, hire_cost: 878850, port_costs: 0, misc_costs: 15000, net_profit: 2238016, tce: 34780, vlsfo_consumed: 1560, mgo_consumed: 227, bunker_port: 'Fujairah', bunker_savings: 44800 },
+  { vessel: 'Ocean Horizon', cargo: 'BHP Iron Ore', speed_type: 'eco', can_make_laycan: true, arrival_date: '2026-03-10', laycan_end: '2026-03-11', days_margin: 1.0, total_days: 30.2, ballast_days: 6.4, laden_days: 14.1, load_days: 2.2, discharge_days: 5.8, waiting_days: 0, cargo_qty: 176000, gross_freight: 1584000, net_freight: 1524600, commission_cost: 59400, total_bunker_cost: 478200, bunker_cost_vlsfo: 400800, bunker_cost_mgo: 77400, hire_cost: 475650, port_costs: 380000, misc_costs: 15000, net_profit: 175750, tce: 18440, vlsfo_consumed: 818, mgo_consumed: 119, bunker_port: 'Singapore', bunker_savings: 18700 },
+  { vessel: 'Ocean Horizon', cargo: 'CSN Iron Ore', speed_type: 'eco', can_make_laycan: true, arrival_date: '2026-04-05', laycan_end: '2026-04-08', days_margin: 3.0, total_days: 68.4, ballast_days: 24.8, laden_days: 29.6, load_days: 3.3, discharge_days: 6.5, waiting_days: 0, cargo_qty: 178050, gross_freight: 3970515, net_freight: 3821633, commission_cost: 148882, total_bunker_cost: 1098400, bunker_cost_vlsfo: 921600, bunker_cost_mgo: 176800, hire_cost: 1077300, port_costs: 165000, misc_costs: 15000, net_profit: 1465933, tce: 33290, vlsfo_consumed: 1882, mgo_consumed: 273, bunker_port: 'Gibraltar', bunker_savings: 57300 },
+  // Pacific Glory
+  { vessel: 'Pacific Glory', cargo: 'EGA Bauxite', speed_type: 'eco', can_make_laycan: true, arrival_date: '2026-04-07', laycan_end: '2026-04-10', days_margin: 3.0, total_days: 53.1, ballast_days: 16.2, laden_days: 21.8, load_days: 6.6, discharge_days: 7.3, waiting_days: 0, cargo_qty: 178820, gross_freight: 4112860, net_freight: 4061278, commission_cost: 51582, total_bunker_cost: 878600, bunker_cost_vlsfo: 736400, bunker_cost_mgo: 142200, hire_cost: 785880, port_costs: 0, misc_costs: 15000, net_profit: 2381798, tce: 38920, vlsfo_consumed: 1502, mgo_consumed: 219, bunker_port: 'Fujairah', bunker_savings: 41200 },
+  { vessel: 'Pacific Glory', cargo: 'BHP Iron Ore', speed_type: 'eco', can_make_laycan: true, arrival_date: '2026-03-11', laycan_end: '2026-03-11', days_margin: 0.0, total_days: 29.8, ballast_days: 5.8, laden_days: 14.3, load_days: 2.2, discharge_days: 5.9, waiting_days: 0, cargo_qty: 176000, gross_freight: 1584000, net_freight: 1524600, commission_cost: 59400, total_bunker_cost: 465300, bunker_cost_vlsfo: 390200, bunker_cost_mgo: 75100, hire_cost: 441040, port_costs: 380000, misc_costs: 15000, net_profit: 223260, tce: 20180, vlsfo_consumed: 796, mgo_consumed: 116, bunker_port: 'Singapore', bunker_savings: 16900 },
+  { vessel: 'Pacific Glory', cargo: 'CSN Iron Ore', speed_type: 'eco', can_make_laycan: false, arrival_date: '2026-04-12', laycan_end: '2026-04-08', days_margin: -4.0, total_days: 66.9, ballast_days: 23.1, laden_days: 29.8, load_days: 3.3, discharge_days: 6.5, waiting_days: 0, cargo_qty: 178820, gross_freight: 3987676, net_freight: 3838142, commission_cost: 149534, total_bunker_cost: 1068200, bunker_cost_vlsfo: 896400, bunker_cost_mgo: 171800, hire_cost: 990120, port_costs: 165000, misc_costs: 15000, net_profit: 1599822, tce: 36120, vlsfo_consumed: 1828, mgo_consumed: 265, bunker_port: 'Gibraltar', bunker_savings: 54200 },
+  // Golden Ascent
+  { vessel: 'Golden Ascent', cargo: 'EGA Bauxite', speed_type: 'eco', can_make_laycan: true, arrival_date: '2026-04-08', laycan_end: '2026-04-10', days_margin: 2.0, total_days: 58.6, ballast_days: 20.1, laden_days: 23.4, load_days: 6.8, discharge_days: 7.1, waiting_days: 0, cargo_qty: 176465, gross_freight: 4058695, net_freight: 4007961, commission_cost: 50734, total_bunker_cost: 842500, bunker_cost_vlsfo: 706100, bunker_cost_mgo: 136400, hire_cost: 817470, port_costs: 0, misc_costs: 15000, net_profit: 2332991, tce: 35910, vlsfo_consumed: 1440, mgo_consumed: 210, bunker_port: 'Fujairah', bunker_savings: 38400 },
+  { vessel: 'Golden Ascent', cargo: 'BHP Iron Ore', speed_type: 'eco', can_make_laycan: true, arrival_date: '2026-03-10', laycan_end: '2026-03-11', days_margin: 1.0, total_days: 33.8, ballast_days: 9.4, laden_days: 15.2, load_days: 2.2, discharge_days: 5.9, waiting_days: 0, cargo_qty: 176000, gross_freight: 1584000, net_freight: 1524600, commission_cost: 59400, total_bunker_cost: 512800, bunker_cost_vlsfo: 430200, bunker_cost_mgo: 82600, hire_cost: 471540, port_costs: 380000, misc_costs: 15000, net_profit: 145260, tce: 16230, vlsfo_consumed: 878, mgo_consumed: 127, bunker_port: 'Singapore', bunker_savings: 19800 },
+  { vessel: 'Golden Ascent', cargo: 'CSN Iron Ore', speed_type: 'eco', can_make_laycan: true, arrival_date: '2026-04-07', laycan_end: '2026-04-08', days_margin: 1.0, total_days: 71.2, ballast_days: 27.1, laden_days: 30.8, load_days: 3.4, discharge_days: 6.8, waiting_days: 0, cargo_qty: 176465, gross_freight: 3935174, net_freight: 3787581, commission_cost: 147593, total_bunker_cost: 1012600, bunker_cost_vlsfo: 849400, bunker_cost_mgo: 163200, hire_cost: 993240, port_costs: 165000, misc_costs: 15000, net_profit: 1601741, tce: 34280, vlsfo_consumed: 1734, mgo_consumed: 252, bunker_port: 'Gibraltar', bunker_savings: 52800 },
+];
+
+// ─── Optimal Portfolio ─────────────────────────────────────
+export const mockPortfolio: PortfolioResult = {
+  assignments: [
+    { vessel: 'ANN BELL', cargo: 'Vale Malaysia Iron Ore (Brazil-Malaysia)', voyage: { ...mockAllVoyages[0], vessel_type: 'cargill', cargo_type: 'market', net_profit: 915509, tce: 22614 } },
+    { vessel: 'OCEAN HORIZON', cargo: 'BHP Iron Ore (Australia-S.Korea)', voyage: { ...mockAllVoyages[1], vessel_type: 'cargill', cargo_type: 'market', net_profit: 350978, tce: 27036 } },
+    { vessel: 'PACIFIC GLORY', cargo: 'Teck Coking Coal (Canada-China)', voyage: { ...mockAllVoyages[2], vessel_type: 'cargill', cargo_type: 'market', net_profit: 708408, tce: 29426 } },
+    { vessel: 'GOLDEN ASCENT', cargo: 'Adaro Coal (Indonesia-India)', voyage: { ...mockAllVoyages[3], vessel_type: 'cargill', cargo_type: 'market', net_profit: 1169745, tce: 35181 } },
+  ],
+  unassigned_vessels: [],
+  unassigned_cargoes: [],
+  total_profit: 5803558,
+  total_tce: 115657,
+  avg_tce: 28914,
+};
+
+// ─── Bunker Sensitivity ────────────────────────────────────
+export const mockBunkerSensitivity: ScenarioPoint[] = [
+  { parameter_value: 0.80, total_profit: 2986000, avg_tce: 28100, assignments: ['Ann Bell→BHP', 'Ocean Horizon→CSN', 'Pacific Glory→EGA'] },
+  { parameter_value: 0.85, total_profit: 2826000, avg_tce: 27200, assignments: ['Ann Bell→BHP', 'Ocean Horizon→CSN', 'Pacific Glory→EGA'] },
+  { parameter_value: 0.90, total_profit: 2666000, avg_tce: 26300, assignments: ['Ann Bell→BHP', 'Ocean Horizon→CSN', 'Pacific Glory→EGA'] },
+  { parameter_value: 0.95, total_profit: 2506000, avg_tce: 25400, assignments: ['Ann Bell→BHP', 'Ocean Horizon→CSN', 'Pacific Glory→EGA'] },
+  { parameter_value: 1.00, total_profit: 2346927, avg_tce: 24213, assignments: ['Ann Bell→BHP', 'Ocean Horizon→CSN', 'Pacific Glory→EGA'] },
+  { parameter_value: 1.05, total_profit: 2186000, avg_tce: 23100, assignments: ['Ann Bell→BHP', 'Ocean Horizon→CSN', 'Pacific Glory→EGA'] },
+  { parameter_value: 1.10, total_profit: 2026000, avg_tce: 22000, assignments: ['Ann Bell→BHP', 'Ocean Horizon→CSN', 'Pacific Glory→EGA'] },
+  { parameter_value: 1.15, total_profit: 1866000, avg_tce: 20900, assignments: ['Ann Bell→BHP', 'Ocean Horizon→CSN', 'Pacific Glory→EGA'] },
+  { parameter_value: 1.20, total_profit: 1706000, avg_tce: 19800, assignments: ['Ann Bell→BHP', 'Golden Ascent→CSN', 'Pacific Glory→EGA'] },
+  { parameter_value: 1.25, total_profit: 1546000, avg_tce: 18700, assignments: ['Ann Bell→BHP', 'Golden Ascent→CSN', 'Pacific Glory→EGA'] },
+  { parameter_value: 1.30, total_profit: 1386000, avg_tce: 17600, assignments: ['Ann Bell→BHP', 'Golden Ascent→CSN', 'Pacific Glory→EGA'] },
+  { parameter_value: 1.35, total_profit: 1226000, avg_tce: 16500, assignments: ['Ann Bell→BHP', 'Golden Ascent→CSN', 'Pacific Glory→EGA'] },
+  { parameter_value: 1.40, total_profit: 1066000, avg_tce: 15400, assignments: ['Ann Bell→BHP', 'Golden Ascent→CSN', 'Pacific Glory→EGA'] },
+  { parameter_value: 1.50, total_profit: 746000, avg_tce: 13200, assignments: ['Ann Bell→BHP', 'Golden Ascent→CSN', 'Pacific Glory→EGA'] },
+];
+
+// ─── Port Delay Sensitivity ────────────────────────────────
+export const mockPortDelaySensitivity: ScenarioPoint[] = [
+  { parameter_value: 0, total_profit: 2346927, avg_tce: 24213, assignments: ['Ann Bell→BHP', 'Ocean Horizon→CSN', 'Pacific Glory→EGA'] },
+  { parameter_value: 1, total_profit: 2248000, avg_tce: 23400, assignments: ['Ann Bell→BHP', 'Ocean Horizon→CSN', 'Pacific Glory→EGA'] },
+  { parameter_value: 2, total_profit: 2149000, avg_tce: 22600, assignments: ['Ann Bell→BHP', 'Ocean Horizon→CSN', 'Pacific Glory→EGA'] },
+  { parameter_value: 3, total_profit: 2050000, avg_tce: 21800, assignments: ['Ann Bell→BHP', 'Ocean Horizon→CSN', 'Pacific Glory→EGA'] },
+  { parameter_value: 4, total_profit: 1951000, avg_tce: 21000, assignments: ['Ann Bell→BHP', 'Ocean Horizon→CSN', 'Pacific Glory→EGA'] },
+  { parameter_value: 5, total_profit: 1852000, avg_tce: 20200, assignments: ['Ann Bell→BHP', 'Ocean Horizon→CSN', 'Pacific Glory→EGA'] },
+  { parameter_value: 6, total_profit: 1753000, avg_tce: 19400, assignments: ['Ann Bell→BHP', 'Golden Ascent→CSN', 'Pacific Glory→EGA'] },
+  { parameter_value: 7, total_profit: 1654000, avg_tce: 18600, assignments: ['Ann Bell→BHP', 'Golden Ascent→CSN', 'Pacific Glory→EGA'] },
+  { parameter_value: 8, total_profit: 1555000, avg_tce: 17800, assignments: ['Ann Bell→BHP', 'Golden Ascent→CSN', 'Pacific Glory→EGA'] },
+  { parameter_value: 10, total_profit: 1357000, avg_tce: 16200, assignments: ['Ann Bell→BHP', 'Golden Ascent→CSN', 'Pacific Glory→EGA'] },
+  { parameter_value: 12, total_profit: 1159000, avg_tce: 14600, assignments: ['Ann Bell→BHP', 'Golden Ascent→CSN', 'Ann Bell→EGA'] },
+  { parameter_value: 15, total_profit: 862000, avg_tce: 12200, assignments: ['Ann Bell→BHP', 'Golden Ascent→CSN', 'Ann Bell→EGA'] },
+];
+
+// ─── Tipping Points ────────────────────────────────────────
+export const mockTippingPoints: TippingPoint[] = [
+  { parameter: 'Bunker Price', value: 1.18, description: 'At 118% of current bunker prices, Ocean Horizon is replaced by Golden Ascent for CSN Iron Ore due to lower fuel consumption on the eco route.', profit_before: 2026000, profit_after: 1946000 },
+  { parameter: 'Port Delay', value: 5.5, description: 'At 5.5 extra days of port delay, Ocean Horizon can no longer make CSN laycan. Golden Ascent (closer departure) takes over.', profit_before: 1852000, profit_after: 1753000 },
+];
+
+// ─── Port Delays (ML predictions) ──────────────────────────
+export const mockPortDelays: PortDelay[] = [
+  { port: 'Qingdao', predicted_delay_days: 3.2, confidence_lower: 1.8, confidence_upper: 4.6, congestion_level: 'medium', model_used: 'ml_model' },
+  { port: 'Rizhao', predicted_delay_days: 2.1, confidence_lower: 1.2, confidence_upper: 3.0, congestion_level: 'low', model_used: 'ml_model' },
+  { port: 'Caofeidian', predicted_delay_days: 4.5, confidence_lower: 3.1, confidence_upper: 5.9, congestion_level: 'high', model_used: 'ml_model' },
+  { port: 'Fangcheng', predicted_delay_days: 2.8, confidence_lower: 1.5, confidence_upper: 4.1, congestion_level: 'medium', model_used: 'ml_model' },
+  { port: 'Mundra', predicted_delay_days: 1.4, confidence_lower: 0.8, confidence_upper: 2.0, congestion_level: 'low', model_used: 'ml_model' },
+  { port: 'Vizag', predicted_delay_days: 2.6, confidence_lower: 1.4, confidence_upper: 3.8, congestion_level: 'medium', model_used: 'ml_model' },
+  { port: 'Lianyungang', predicted_delay_days: 3.8, confidence_lower: 2.4, confidence_upper: 5.2, congestion_level: 'medium', model_used: 'ml_model' },
+  { port: 'Port Hedland', predicted_delay_days: 0.8, confidence_lower: 0.3, confidence_upper: 1.3, congestion_level: 'low', model_used: 'ml_model' },
+];
+
+// ─── Model Info ────────────────────────────────────────────
+export const mockModelInfo: ModelInfo = {
+  model_type: 'LightGBM',
+  training_date: '2026-01-26',
+  metrics: { mae: 0.064, rmse: 0.124, within_1_day: 0.9974, within_2_days: 1.0 },
+  feature_importance: [
+    { feature: 'portcalls_dry_bulk_rolling7_mean', importance: 0.894 },
+    { feature: 'port_capacity_ratio', importance: 0.500 },
+    { feature: 'portcalls_dry_bulk_rolling30_mean', importance: 0.070 },
+    { feature: 'portcalls_dry_bulk_rolling14_mean', importance: 0.063 },
+    { feature: 'import_dry_bulk_rolling7_mean', importance: 0.044 },
+    { feature: 'import_dry_bulk_rolling7_sum', importance: 0.028 },
+    { feature: 'import_dry_bulk_rolling30_sum', importance: 0.021 },
+    { feature: 'portcalls_dry_bulk_rolling30_std', importance: 0.013 },
+    { feature: 'cny_proximity_days', importance: 0.011 },
+    { feature: 'import_dry_bulk_momentum', importance: 0.009 },
+  ],
+};
+
+// ─── Heatmap data (vessel x cargo TCE matrix) ──────────────
+export const mockHeatmapData = {
+  vessels: ['Ann Bell', 'Ocean Horizon', 'Pacific Glory', 'Golden Ascent'],
+  cargoes: ['EGA Bauxite', 'BHP Iron Ore', 'CSN Iron Ore'],
+  tce: [
+    [38120, 19920, 37200],
+    [34780, 18440, 33290],
+    [38920, 20180, 36120],
+    [35910, 16230, 34280],
+  ],
+  profit: [
+    [2464250, 249025, 1627892],
+    [2238016, 175750, 1465933],
+    [2381798, 223260, 1599822],
+    [2332991, 145260, 1601741],
+  ],
+  feasible: [
+    [true, true, false],
+    [true, true, true],
+    [true, true, false],
+    [true, true, true],
+  ],
+};
+
+// ─── Laycan feasibility grid ───────────────────────────────
+export const mockLaycanGrid = mockVessels.map((v, vi) =>
+  mockCargoes.map((c, ci) => ({
+    vessel: v.name,
+    cargo: c.name,
+    feasible: mockHeatmapData.feasible[vi][ci],
+    arrival: mockAllVoyages[vi * 3 + ci].arrival_date,
+    laycan_end: mockAllVoyages[vi * 3 + ci].laycan_end,
+    margin: mockAllVoyages[vi * 3 + ci].days_margin,
+  }))
+);
+
+// ─── Chat mock messages ────────────────────────────────────
+export const mockChatMessages: ChatMessage[] = [
+  {
+    id: '1',
+    role: 'assistant',
+    content: "Welcome! I'm your maritime analytics assistant. I can help you analyze vessel assignments, run scenario analyses, compare voyages, and explore port congestion predictions. What would you like to know?",
+    timestamp: new Date('2026-01-28T10:00:00'),
+  },
+];
+
+// ─── Seasonal calendar data ────────────────────────────────
+export const mockSeasonalEvents = [
+  { name: 'Chinese New Year', start: '2026-02-07', end: '2026-02-21', impact: 'high', region: 'China', description: 'Pre-rush congestion 2 weeks before, slowdown during CNY' },
+  { name: 'Golden Week', start: '2026-10-01', end: '2026-10-07', impact: 'medium', region: 'China', description: 'Port congestion spike before and after holiday' },
+  { name: 'SW Monsoon', start: '2026-06-01', end: '2026-09-30', impact: 'high', region: 'India', description: 'West coast ports (Mundra) see increased delays' },
+  { name: 'Typhoon Season', start: '2026-07-01', end: '2026-10-31', impact: 'high', region: 'East Asia', description: 'Port closures and delays across China, Korea, Japan' },
+  { name: 'Winter North China', start: '2026-12-01', end: '2027-02-28', impact: 'medium', region: 'North China', description: 'Ice conditions increase delays at Caofeidian, Rizhao' },
+  { name: 'Diwali', start: '2026-10-20', end: '2026-10-24', impact: 'low', region: 'India', description: 'Minor port slowdowns in Indian ports' },
+];
+
+// ─── Route map data (port coordinates for SVG map) ─────────
+export const portCoordinates: Record<string, { lat: number; lng: number }> = {
+  'Qingdao': { lat: 36.07, lng: 120.38 },
+  'Gwangyang': { lat: 34.93, lng: 127.70 },
+  'Fangcheng': { lat: 21.69, lng: 108.35 },
+  'Map Ta Phut': { lat: 12.71, lng: 101.15 },
+  'Kamsar': { lat: 10.65, lng: -14.60 },
+  'Port Hedland': { lat: -20.31, lng: 118.58 },
+  'Itaguai': { lat: -22.86, lng: -43.77 },
+  'Lianyungang': { lat: 34.60, lng: 119.22 },
+  'Singapore': { lat: 1.29, lng: 103.85 },
+  'Fujairah': { lat: 25.12, lng: 56.33 },
+  'Rotterdam': { lat: 51.92, lng: 4.48 },
+  'Gibraltar': { lat: 36.14, lng: -5.35 },
+  'Durban': { lat: -29.88, lng: 31.05 },
+  'Mundra': { lat: 22.84, lng: 69.72 },
+  'Vizag': { lat: 17.69, lng: 83.22 },
+  'Caofeidian': { lat: 39.22, lng: 118.53 },
+  'Rizhao': { lat: 35.38, lng: 119.53 },
+};
+
+// ─── Suggested chatbot prompts ─────────────────────────────
+export const suggestedPrompts = [
+  'What is the optimal vessel assignment?',
+  'What if bunker prices rise 20%?',
+  'Compare vessels for EGA Bauxite',
+  'Which ports have highest congestion?',
+  'Explain the bunkering strategy',
+  'What are the tipping points?',
+];

@@ -9,6 +9,9 @@ __pycache__/
 venv/
 ENV/
 
+# Node.js
+node_modules/
+
 # Jupyter
 .ipynb_checkpoints/
 
