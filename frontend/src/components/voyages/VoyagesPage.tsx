@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowUpDown, ArrowUp, ArrowDown, GitCompareArrows, X, Loader2 } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, GitCompareArrows, X, Loader2, Download, Search, Filter } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
@@ -21,14 +21,28 @@ export default function VoyagesPage() {
   const [sortKey, setSortKey] = useState<SortKey>('tce');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [selected, setSelected] = useState<string[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [vesselTypeFilter, setVesselTypeFilter] = useState<'all' | 'cargill' | 'market'>('all');
+  const [cargoTypeFilter, setCargoTypeFilter] = useState<'all' | 'cargill' | 'market'>('all');
+  const [feasibilityFilter, setFeasibilityFilter] = useState<'all' | 'yes' | 'no'>('all');
 
   const toggle = (key: SortKey) => {
     if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
     else { setSortKey(key); setSortDir('desc'); }
   };
 
+  const filtered = useMemo(() => {
+    let arr = [...allVoyages];
+    const term = searchTerm.toLowerCase();
+    if (term) arr = arr.filter(v => v.vessel.toLowerCase().includes(term) || v.cargo.toLowerCase().includes(term));
+    if (vesselTypeFilter !== 'all') arr = arr.filter(v => v.vessel_type === vesselTypeFilter);
+    if (cargoTypeFilter !== 'all') arr = arr.filter(v => v.cargo_type === cargoTypeFilter);
+    if (feasibilityFilter !== 'all') arr = arr.filter(v => feasibilityFilter === 'yes' ? v.can_make_laycan : !v.can_make_laycan);
+    return arr;
+  }, [allVoyages, searchTerm, vesselTypeFilter, cargoTypeFilter, feasibilityFilter]);
+
   const sorted = useMemo(() => {
-    const arr = [...allVoyages];
+    const arr = [...filtered];
     arr.sort((a, b) => {
       let va: number | string = a[sortKey] as number | string;
       let vb: number | string = b[sortKey] as number | string;
@@ -37,7 +51,24 @@ export default function VoyagesPage() {
       return sortDir === 'asc' ? (va as number) - (vb as number) : (vb as number) - (va as number);
     });
     return arr;
-  }, [allVoyages, sortKey, sortDir]);
+  }, [filtered, sortKey, sortDir]);
+
+  const exportCSV = useCallback(() => {
+    const headers = ['Vessel','Cargo','Vessel Type','Cargo Type','TCE','Net Profit','Total Days','Feasible','Days Margin','Bunker Port'];
+    const rows = sorted.map(v => [
+      v.vessel, v.cargo, v.vessel_type, v.cargo_type,
+      v.tce, v.net_profit, v.total_days,
+      v.can_make_laycan ? 'Yes' : 'No', v.days_margin, v.bunker_port || '',
+    ]);
+    const csv = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'voyages_export.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [sorted]);
 
   const selVoyages = allVoyages.filter(v => selected.includes(`${v.vessel}|${v.cargo}`));
 
@@ -76,13 +107,54 @@ export default function VoyagesPage() {
     <div className="space-y-5 max-w-[1280px]">
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
         <div className="bg-white rounded-xl border border-[#DCE3ED] shadow-card overflow-hidden">
-          <div className="px-5 py-3 border-b border-border flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-navy-900">All Voyage Combinations ({allVoyages.length} total)</h3>
-            {selected.length > 0 && (
-              <button onClick={() => setSelected([])} className="text-xs text-text-secondary hover:text-coral-500 flex items-center gap-1">
-                <X className="w-3 h-3" /> Clear selection
-              </button>
-            )}
+          <div className="px-5 py-3 border-b border-border space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-navy-900">
+                All Voyage Combinations ({filtered.length}{filtered.length !== allVoyages.length ? ` of ${allVoyages.length}` : ''} total)
+              </h3>
+              <div className="flex items-center gap-2">
+                {selected.length > 0 && (
+                  <button onClick={() => setSelected([])} className="text-xs text-text-secondary hover:text-coral-500 flex items-center gap-1">
+                    <X className="w-3 h-3" /> Clear selection
+                  </button>
+                )}
+                <button onClick={exportCSV} className="text-xs font-medium text-ocean-600 hover:text-ocean-700 bg-ocean-50 hover:bg-ocean-100 px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors">
+                  <Download className="w-3.5 h-3.5" /> Export CSV
+                </button>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-text-secondary" />
+                <input
+                  type="text"
+                  placeholder="Search vessel or cargo..."
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                  className="text-xs pl-8 pr-3 py-1.5 border border-border rounded-lg bg-cloud/50 focus:outline-none focus:ring-1 focus:ring-ocean-300 w-52"
+                />
+              </div>
+              <select value={vesselTypeFilter} onChange={e => setVesselTypeFilter(e.target.value as any)} className="text-xs px-2.5 py-1.5 border border-border rounded-lg bg-cloud/50 focus:outline-none focus:ring-1 focus:ring-ocean-300">
+                <option value="all">All Vessels</option>
+                <option value="cargill">Cargill Vessels</option>
+                <option value="market">Market Vessels</option>
+              </select>
+              <select value={cargoTypeFilter} onChange={e => setCargoTypeFilter(e.target.value as any)} className="text-xs px-2.5 py-1.5 border border-border rounded-lg bg-cloud/50 focus:outline-none focus:ring-1 focus:ring-ocean-300">
+                <option value="all">All Cargoes</option>
+                <option value="cargill">Cargill Cargoes</option>
+                <option value="market">Market Cargoes</option>
+              </select>
+              <select value={feasibilityFilter} onChange={e => setFeasibilityFilter(e.target.value as any)} className="text-xs px-2.5 py-1.5 border border-border rounded-lg bg-cloud/50 focus:outline-none focus:ring-1 focus:ring-ocean-300">
+                <option value="all">All Feasibility</option>
+                <option value="yes">Feasible Only</option>
+                <option value="no">Infeasible Only</option>
+              </select>
+              {(searchTerm || vesselTypeFilter !== 'all' || cargoTypeFilter !== 'all' || feasibilityFilter !== 'all') && (
+                <button onClick={() => { setSearchTerm(''); setVesselTypeFilter('all'); setCargoTypeFilter('all'); setFeasibilityFilter('all'); }} className="text-xs text-text-secondary hover:text-coral-500 flex items-center gap-1">
+                  <X className="w-3 h-3" /> Clear filters
+                </button>
+              )}
+            </div>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

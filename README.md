@@ -128,7 +128,8 @@ chmod +x start_dev.sh
 ```bash
 # Terminal 1: Backend
 conda activate base
-uvicorn api.main:app --reload --port 8000
+uvicorn api.main:app --reload --port 80
+00
 
 # Terminal 2: Frontend
 cd frontend

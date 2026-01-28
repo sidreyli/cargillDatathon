@@ -6,9 +6,13 @@ Pre-computes results on startup for sub-50ms API responses.
 import sys
 import os
 import json
+import logging
+import time
 from typing import Dict, List, Optional, Any
 from dataclasses import asdict
 from datetime import datetime
+
+logger = logging.getLogger("cargill.calculator")
 
 # Add parent dir so we can import src package
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -28,6 +32,21 @@ from src.portfolio_optimizer import (
 
 def _voyage_to_dict(v: Vessel, c: Cargo, result: VoyageResult, speed_type: str = "eco") -> dict:
     """Convert VoyageResult dataclass to API-friendly dict."""
+    # BUG FIX 1: Calculate days_margin from arrival_date and laycan_end
+    # VoyageResult doesn't have days_margin field, so we compute it here
+    days_margin = (result.laycan_end - result.arrival_date).total_seconds() / 86400
+
+    # BUG FIX 3: Adjust net_profit for market vessels
+    # Market vessels have hire_rate=0, so calculate_voyage() doesn't deduct hire costs.
+    # We apply FFA market rate ($18,000/day) to show realistic profit.
+    FFA_MARKET_RATE = 18000
+    if v.is_cargill:
+        net_profit = result.net_profit
+    else:
+        # Market vessel: apply FFA market hire rate
+        voyage_costs = result.total_bunker_cost + result.port_costs + result.misc_costs
+        net_profit = result.net_freight - voyage_costs - (FFA_MARKET_RATE * result.total_days)
+
     return {
         "vessel": v.name,
         "cargo": c.name,
@@ -35,7 +54,7 @@ def _voyage_to_dict(v: Vessel, c: Cargo, result: VoyageResult, speed_type: str =
         "can_make_laycan": result.can_make_laycan,
         "arrival_date": result.arrival_date.strftime("%Y-%m-%d") if hasattr(result.arrival_date, "strftime") else str(result.arrival_date),
         "laycan_end": result.laycan_end.strftime("%Y-%m-%d") if hasattr(result.laycan_end, "strftime") else str(result.laycan_end),
-        "days_margin": round(result.days_margin if hasattr(result, "days_margin") else 0, 1),
+        "days_margin": round(days_margin, 1),
         "total_days": round(result.total_days, 1),
         "ballast_days": round(result.ballast_days, 1),
         "laden_days": round(result.laden_days, 1),
@@ -52,7 +71,7 @@ def _voyage_to_dict(v: Vessel, c: Cargo, result: VoyageResult, speed_type: str =
         "hire_cost": round(result.hire_cost, 0),
         "port_costs": round(result.port_costs, 0),
         "misc_costs": round(result.misc_costs, 0),
-        "net_profit": round(result.net_profit, 0),
+        "net_profit": round(net_profit, 0),
         "tce": round(result.tce, 0),
         "vlsfo_consumed": round(result.vlsfo_consumed, 1),
         "mgo_consumed": round(result.mgo_consumed, 1),
@@ -102,9 +121,12 @@ def _full_portfolio_to_dict(result: FullPortfolioResult, vessels_map: dict, carg
             "tce": round(option.tce, 0),
         }
         if option.result:
+            # BUG FIX 2: Calculate days_margin for full portfolio assignments
+            days_margin = (option.result.laycan_end - option.result.arrival_date).total_seconds() / 86400
             voyage_dict.update({
                 "arrival_date": option.result.arrival_date.strftime("%Y-%m-%d") if hasattr(option.result.arrival_date, "strftime") else str(option.result.arrival_date),
                 "laycan_end": option.result.laycan_end.strftime("%Y-%m-%d") if hasattr(option.result.laycan_end, "strftime") else str(option.result.laycan_end),
+                "days_margin": round(days_margin, 1),
                 "ballast_days": round(option.result.ballast_days, 1),
                 "laden_days": round(option.result.laden_days, 1),
                 "load_days": round(option.result.load_days, 1),
@@ -188,7 +210,8 @@ class CalculatorService:
 
     def initialize(self):
         """Initialize all components and pre-compute results."""
-        print("[CalculatorService] Initializing...")
+        t0 = time.perf_counter()
+        logger.info("Initializing...")
 
         # Create data
         self.cargill_vessels = create_cargill_vessels()
@@ -229,10 +252,11 @@ class CalculatorService:
         self._load_model_info()
         self._compute_ml_delays()
 
-        print("[CalculatorService] Ready.")
+        logger.info("Ready. Total init: %.2fs", time.perf_counter() - t0)
 
     def _compute_portfolio(self):
-        print("[CalculatorService] Computing optimal portfolio (full optimization)...")
+        t = time.perf_counter()
+        logger.info("Computing optimal portfolio (full optimization)...")
         full_result = self.full_optimizer.optimize_full_portfolio(
             cargill_vessels=self.cargill_vessels,
             market_vessels=self.market_vessels,
@@ -242,9 +266,11 @@ class CalculatorService:
             dual_speed_mode=True,
         )
         self._portfolio_cache = _full_portfolio_to_dict(full_result, self.vessels_map, self.cargoes_map)
+        logger.info("Portfolio computed in %.2fs", time.perf_counter() - t)
 
     def _compute_all_voyages(self):
-        print("[CalculatorService] Computing all voyages...")
+        t = time.perf_counter()
+        logger.info("Computing all voyages...")
         voyages = []
         all_vessels = self.cargill_vessels + self.market_vessels
         all_cargoes = self.cargill_cargoes + self.market_cargoes
@@ -259,11 +285,13 @@ class CalculatorService:
                     voyage_dict["cargo_type"] = "cargill" if c.is_cargill else "market"
                     voyages.append(voyage_dict)
                 except Exception as e:
-                    print(f"  Warning: {v.name} -> {c.name}: {e}")
+                    logger.warning("Voyage calc failed: %s -> %s: %s", v.name, c.name, e)
         self._all_voyages_cache = voyages
+        logger.info("All voyages computed in %.2fs (%d combinations)", time.perf_counter() - t, len(voyages))
 
     def _compute_scenarios(self):
-        print("[CalculatorService] Computing scenarios...")
+        t = time.perf_counter()
+        logger.info("Computing scenarios...")
         # Bunker sensitivity
         try:
             df = self.scenario_analyzer.analyze_bunker_sensitivity(
@@ -272,7 +300,7 @@ class CalculatorService:
             )
             self._bunker_sensitivity_cache = df.to_dict(orient="records")
         except Exception as e:
-            print(f"  Bunker sensitivity error: {e}")
+            logger.error("Bunker sensitivity error: %s", e)
             self._bunker_sensitivity_cache = []
 
         # Port delay sensitivity
@@ -283,7 +311,7 @@ class CalculatorService:
             )
             self._delay_sensitivity_cache = df.to_dict(orient="records")
         except Exception as e:
-            print(f"  Delay sensitivity error: {e}")
+            logger.error("Delay sensitivity error: %s", e)
             self._delay_sensitivity_cache = []
 
         # Tipping points
@@ -293,8 +321,9 @@ class CalculatorService:
             )
             self._tipping_points_cache = tp
         except Exception as e:
-            print(f"  Tipping points error: {e}")
+            logger.error("Tipping points error: %s", e)
             self._tipping_points_cache = {}
+        logger.info("Scenarios computed in %.2fs", time.perf_counter() - t)
 
     def _load_model_info(self):
         project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -306,14 +335,14 @@ class CalculatorService:
             self._model_info_cache = {}
 
     def _compute_ml_delays(self):
-        print("[CalculatorService] Computing ML port delays...")
+        logger.info("Computing ML port delays...")
         try:
             delays = get_ml_port_delays(self.cargill_cargoes)
             self._ml_delays_cache = [
                 {"port": port, **info} for port, info in delays.items()
             ]
         except Exception as e:
-            print(f"  ML delays error: {e}")
+            logger.error("ML delays error: %s", e)
             self._ml_delays_cache = []
 
     # ─── Public API ──────────────────────────────────────────

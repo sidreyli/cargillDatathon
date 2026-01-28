@@ -38,8 +38,8 @@ export function usePortfolio() {
         avg_tce: raw.avg_tce || 0,
       };
     },
-    staleTime: 0, // Don't cache - always fetch fresh data
-    gcTime: 0, // Immediately garbage collect old data
+    staleTime: 5 * 60 * 1000, // 5 min - data is pre-computed at startup
+    gcTime: 10 * 60 * 1000,
   });
 }
 
@@ -47,9 +47,8 @@ export function useAllVoyages() {
   return useQuery({
     queryKey: ['allVoyages'],
     queryFn: api.getAllVoyages,
-    staleTime: 0, // Always refetch
-    gcTime: 5 * 60 * 1000, // Keep in cache for 5 min
-    refetchOnMount: true,
+    staleTime: 5 * 60 * 1000, // 5 min - data is pre-computed at startup
+    gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
 }

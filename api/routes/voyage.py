@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List
 from ..services.calculator_service import calculator_service
 
@@ -8,11 +8,11 @@ router = APIRouter(prefix="/api/voyage", tags=["voyage"])
 
 
 class VoyageCalcRequest(BaseModel):
-    vessel_name: str
-    cargo_name: str
+    vessel_name: str = Field(..., min_length=1, max_length=200)
+    cargo_name: str = Field(..., min_length=1, max_length=200)
     use_eco_speed: bool = True
-    extra_port_delay: float = 0
-    bunker_adjustment: float = 1.0
+    extra_port_delay: float = Field(0, ge=0, le=60)
+    bunker_adjustment: float = Field(1.0, ge=0.1, le=5.0)
 
 
 class CompareRequest(BaseModel):

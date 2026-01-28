@@ -6,19 +6,27 @@ Pre-computes optimization results on startup for instant responses.
 """
 
 import os
+import logging
 from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
+    datefmt="%H:%M:%S",
+)
+logger = logging.getLogger("cargill.api")
 
 # Load .env file from project root
 try:
     from dotenv import load_dotenv
     env_path = Path(__file__).parent.parent / ".env"
     load_dotenv(env_path)
-    print(f"[ENV] Loaded from {env_path}")
+    logger.info("Loaded env from %s", env_path)
 except ImportError:
-    print("[ENV] python-dotenv not installed, using system env vars")
+    logger.info("python-dotenv not installed, using system env vars")
 
 from .services.calculator_service import calculator_service
 from .routes import portfolio, voyage, scenario, ml_routes, chat
@@ -27,16 +35,14 @@ from .routes import portfolio, voyage, scenario, ml_routes, chat
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Initialize calculator service on startup."""
-    print("=" * 60)
-    print("Cargill Ocean Transportation API - Starting")
-    print("=" * 60)
+    logger.info("=" * 50)
+    logger.info("Cargill Ocean Transportation API - Starting")
+    logger.info("=" * 50)
     calculator_service.initialize()
-    print("=" * 60)
-    print("API ready at http://localhost:8000")
-    print("Docs at http://localhost:8000/docs")
-    print("=" * 60)
+    logger.info("API ready at http://localhost:8000")
+    logger.info("Docs at http://localhost:8000/docs")
     yield
-    print("Shutting down...")
+    logger.info("Shutting down...")
 
 
 app = FastAPI(
@@ -51,7 +57,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
 
