@@ -62,6 +62,8 @@ export interface VoyageResult {
   mgo_consumed: number;
   bunker_port: string | null;
   bunker_savings: number;
+  vessel_type?: string;
+  cargo_type?: string;
 }
 
 export interface Assignment {
@@ -77,6 +79,7 @@ export interface PortfolioResult {
   total_profit: number;
   total_tce: number;
   avg_tce: number;
+  market_vessel_hires?: Assignment[];
 }
 
 export interface ScenarioPoint {

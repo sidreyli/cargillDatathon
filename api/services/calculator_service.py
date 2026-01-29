@@ -326,11 +326,25 @@ class CalculatorService:
         logger.info("Scenarios computed in %.2fs", time.perf_counter() - t)
 
     def _load_model_info(self):
-        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         path = os.path.join(project_root, "models", "model_info.json")
         try:
             with open(path) as f:
-                self._model_info_cache = json.load(f)
+                raw = json.load(f)
+            self._model_info_cache = {
+                "model_type": raw.get("model_version", "LightGBM"),
+                "training_date": raw.get("training_date", ""),
+                "metrics": {
+                    "mae": raw.get("test_metrics", {}).get("mae", 0),
+                    "rmse": raw.get("test_metrics", {}).get("rmse", 0),
+                    "within_1_day": raw.get("test_metrics", {}).get("within_1_day_pct", 0) / 100,
+                    "within_2_days": raw.get("test_metrics", {}).get("within_2_days_pct", 0) / 100,
+                },
+                "feature_importance": [
+                    {"feature": k, "importance": v}
+                    for k, v in raw.get("shap_analysis", {}).get("shap_feature_importance", {}).items()
+                ],
+            }
         except Exception:
             self._model_info_cache = {}
 
@@ -338,9 +352,13 @@ class CalculatorService:
         logger.info("Computing ML port delays...")
         try:
             delays = get_ml_port_delays(self.cargill_cargoes)
-            self._ml_delays_cache = [
-                {"port": port, **info} for port, info in delays.items()
-            ]
+            self._ml_delays_cache = []
+            for port, info in delays.items():
+                entry = {"port": port, **info}
+                # Rename predicted_delay to predicted_delay_days for frontend compatibility
+                if "predicted_delay" in entry and "predicted_delay_days" not in entry:
+                    entry["predicted_delay_days"] = entry.pop("predicted_delay")
+                self._ml_delays_cache.append(entry)
         except Exception as e:
             logger.error("ML delays error: %s", e)
             self._ml_delays_cache = []

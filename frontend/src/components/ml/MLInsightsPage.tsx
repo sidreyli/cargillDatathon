@@ -38,7 +38,7 @@ export default function MLInsightsPage() {
   const modelInfo = apiModelInfo || mockModelInfo;
   const portDelays = apiPortDelays || mockPortDelays;
 
-  const shapData = modelInfo.feature_importance.map(f => ({
+  const shapData = modelInfo.feature_importance.map((f: { feature: string; importance: number }) => ({
     name: featureLabels[f.feature] || f.feature,
     importance: f.importance,
   }));
@@ -78,7 +78,7 @@ export default function MLInsightsPage() {
               <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: '#0B2545' }} width={150} />
               <Tooltip formatter={(v: number) => v.toFixed(3)} />
               <Bar dataKey="importance" radius={[0, 4, 4, 0]} barSize={18}>
-                {shapData.map((_, i) => (
+                {shapData.map((_: unknown, i: number) => (
                   <Cell key={i} fill={i === 0 ? '#0FA67F' : i === 1 ? '#1B6CA8' : '#48A9E6'} />
                 ))}
               </Bar>
