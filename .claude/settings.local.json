@@ -19,7 +19,11 @@
       "Bash(gh pr create:*)",
       "Bash(git merge:*)",
       "Bash(set PYTHONPATH=%CD%)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(git checkout:*)",
+      "Bash(git cherry-pick:*)",
+      "Bash(git reset:*)",
+      "Bash(git stash:*)"
     ]
   }
 }

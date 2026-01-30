@@ -1,6 +1,6 @@
 import type {
   Vessel, Cargo, VoyageResult, Assignment, PortfolioResult,
-  ScenarioPoint, TippingPoint, PortDelay, ModelInfo, ChatMessage
+  ScenarioPoint, TippingPoint, TippingPointExtended, PortDelay, ModelInfo, ChatMessage
 } from '../types';
 
 // ─── Vessels ───────────────────────────────────────────────
@@ -88,9 +88,43 @@ export const mockPortDelaySensitivity: ScenarioPoint[] = [
 ];
 
 // ─── Tipping Points ────────────────────────────────────────
-export const mockTippingPoints: TippingPoint[] = [
-  { parameter: 'Bunker Price', value: 1.18, description: 'At 118% of current bunker prices, Ocean Horizon is replaced by Golden Ascent for CSN Iron Ore due to lower fuel consumption on the eco route.', profit_before: 2026000, profit_after: 1946000 },
-  { parameter: 'Port Delay', value: 5.5, description: 'At 5.5 extra days of port delay, Ocean Horizon can no longer make CSN laycan. Golden Ascent (closer departure) takes over.', profit_before: 1852000, profit_after: 1753000 },
+export const mockTippingPoints: TippingPointExtended[] = [
+  {
+    parameter: 'Bunker Price',
+    value: 1.18,
+    description: 'At 118% of current bunker prices, Ocean Horizon is replaced by Golden Ascent for CSN Iron Ore due to lower fuel consumption on the eco route.',
+    profit_before: 2026000,
+    profit_after: 1946000,
+    current_best_assignments: [
+      { vessel: 'ANN BELL', cargo: 'BHP Iron Ore', profit: 249025, tce: 19920 },
+      { vessel: 'OCEAN HORIZON', cargo: 'CSN Iron Ore', profit: 1465933, tce: 33290 },
+      { vessel: 'PACIFIC GLORY', cargo: 'EGA Bauxite', profit: 2381798, tce: 38920 },
+    ],
+    next_best_assignments: [
+      { vessel: 'ANN BELL', cargo: 'BHP Iron Ore', profit: 245000, tce: 19500 },
+      { vessel: 'GOLDEN ASCENT', cargo: 'CSN Iron Ore', profit: 1520000, tce: 33800 },
+      { vessel: 'PACIFIC GLORY', cargo: 'EGA Bauxite', profit: 2350000, tce: 38500 },
+    ],
+  },
+  {
+    parameter: 'Port Delay in China',
+    value: 5.5,
+    description: 'At 5.5 extra days of port delay in China, Ocean Horizon can no longer make CSN laycan. Golden Ascent takes over.',
+    profit_before: 1852000,
+    profit_after: 1753000,
+    region: 'china',
+    ports_affected: ['Qingdao', 'Lianyungang'],
+    current_best_assignments: [
+      { vessel: 'ANN BELL', cargo: 'BHP Iron Ore', profit: 249025, tce: 19920 },
+      { vessel: 'OCEAN HORIZON', cargo: 'CSN Iron Ore', profit: 1465933, tce: 33290 },
+      { vessel: 'PACIFIC GLORY', cargo: 'EGA Bauxite', profit: 2381798, tce: 38920 },
+    ],
+    next_best_assignments: [
+      { vessel: 'ANN BELL', cargo: 'BHP Iron Ore', profit: 249025, tce: 19920 },
+      { vessel: 'GOLDEN ASCENT', cargo: 'CSN Iron Ore', profit: 1601741, tce: 34280 },
+      { vessel: 'PACIFIC GLORY', cargo: 'EGA Bauxite', profit: 2381798, tce: 38920 },
+    ],
+  },
 ];
 
 // ─── Port Delays (ML predictions) ──────────────────────────

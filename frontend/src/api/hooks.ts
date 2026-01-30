@@ -22,21 +22,25 @@ export function usePortfolio() {
     queryKey: ['portfolio'],
     queryFn: async () => {
       const raw = await api.getPortfolio();
-      // Normalize: API returns { assignments: [{vessel, cargo, voyage:{...}}], market_vessel_hires, unassigned_vessels, unassigned_cargoes, total_profit, avg_tce }
-      return {
-        assignments: raw.assignments?.map((a: any) => ({
+      // Handle both old format (single portfolio) and new format (list of portfolios)
+      const portfolios = raw.portfolios || [raw];
+
+      const normalizePortfolio = (p: any) => ({
+        assignments: p.assignments?.map((a: any) => ({
           vessel: a.vessel,
           cargo: a.cargo,
           vessel_type: a.voyage?.vessel_type || 'cargill',
           cargo_type: a.voyage?.cargo_type || 'cargill',
           ...(a.voyage || {}),
         })) || [],
-        market_vessel_hires: raw.market_vessel_hires || [],
-        unassigned_vessels: raw.unassigned_vessels || [],
-        unassigned_cargoes: raw.unassigned_cargoes || [],
-        total_profit: raw.total_profit || 0,
-        avg_tce: raw.avg_tce || 0,
-      };
+        market_vessel_hires: p.market_vessel_hires || [],
+        unassigned_vessels: p.unassigned_vessels || [],
+        unassigned_cargoes: p.unassigned_cargoes || [],
+        total_profit: p.total_profit || 0,
+        avg_tce: p.avg_tce || 0,
+      });
+
+      return portfolios.map(normalizePortfolio);
     },
     staleTime: 5 * 60 * 1000, // 5 min - data is pre-computed at startup
     gcTime: 10 * 60 * 1000,
@@ -98,18 +102,24 @@ export function useTippingPoints() {
         points.push({
           parameter: 'Bunker Price',
           value: raw.bunker.multiplier,
-          description: `At ${Math.round(raw.bunker.change_pct)}% increase, assignment changes occur.`,
-          profit_before: 0,
-          profit_after: 0,
+          description: raw.bunker.description || `At ${Math.round(raw.bunker.change_pct)}% increase, assignment changes occur.`,
+          profit_before: raw.bunker.profit_before || 0,
+          profit_after: raw.bunker.profit_after || 0,
+          current_best_assignments: raw.bunker.current_best_assignments || [],
+          next_best_assignments: raw.bunker.next_best_assignments || [],
         });
       }
       if (raw.port_delay) {
         points.push({
-          parameter: 'Port Delay',
+          parameter: 'Port Delay in China',
           value: raw.port_delay.days || raw.port_delay.value,
-          description: `At +${raw.port_delay.days || raw.port_delay.value} days delay, assignment changes occur.`,
-          profit_before: 0,
-          profit_after: 0,
+          description: raw.port_delay.description || `At +${raw.port_delay.days || raw.port_delay.value} days delay in China, assignment changes occur.`,
+          profit_before: raw.port_delay.profit_before || 0,
+          profit_after: raw.port_delay.profit_after || 0,
+          region: raw.port_delay.region || 'china',
+          ports_affected: raw.port_delay.ports_affected || [],
+          current_best_assignments: raw.port_delay.current_best_assignments || [],
+          next_best_assignments: raw.port_delay.next_best_assignments || [],
         });
       }
       return points.length > 0 ? points : null;

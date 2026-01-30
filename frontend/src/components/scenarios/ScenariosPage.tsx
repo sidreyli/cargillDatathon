@@ -9,6 +9,7 @@ import Plot from 'react-plotly.js';
 import {
   mockBunkerSensitivity, mockPortDelaySensitivity, mockTippingPoints,
 } from '../../data/mockData';
+import type { TippingPointExtended } from '../../types';
 import { useBunkerSensitivity, useDelaySensitivity, useTippingPoints } from '../../api/hooks';
 import { formatCurrency, formatCurrencyFull } from '../../utils/formatters';
 
@@ -18,7 +19,7 @@ export default function ScenariosPage() {
   const { data: apiTipping } = useTippingPoints();
   const bunkerSensitivity = apiBunker || mockBunkerSensitivity;
   const delaySensitivity = apiDelay || mockPortDelaySensitivity;
-  const tippingPoints = apiTipping || mockTippingPoints;
+  const tippingPoints: TippingPointExtended[] = apiTipping || mockTippingPoints;
 
   const [bunkerMult, setBunkerMult] = useState(1.0);
   const [delayDays, setDelayDays] = useState(0);
@@ -104,7 +105,7 @@ export default function ScenariosPage() {
           className="bg-white rounded-xl border border-[#DCE3ED] shadow-card p-5">
           <div className="flex items-center gap-2 mb-4">
             <Clock className="w-4 h-4 text-ocean-500" />
-            <h3 className="text-sm font-semibold text-navy-900">Port Delay Sensitivity</h3>
+            <h3 className="text-sm font-semibold text-navy-900">Port Delay Sensitivity (China)</h3>
           </div>
           <div className="flex items-center gap-4 mb-2">
             <input type="range" min={0} max={15} step={0.5} value={delayDays}
@@ -149,7 +150,7 @@ export default function ScenariosPage() {
 
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
           className="bg-white rounded-xl border border-[#DCE3ED] shadow-card p-5">
-          <h3 className="text-sm font-semibold text-navy-900 mb-3">Profit vs Port Delay</h3>
+          <h3 className="text-sm font-semibold text-navy-900 mb-3">Profit vs Port Delay (China)</h3>
           <ResponsiveContainer width="100%" height={240}>
             <ComposedChart data={delaySensitivity}>
               <CartesianGrid strokeDasharray="3 3" stroke="#DCE3ED" />
@@ -165,24 +166,114 @@ export default function ScenariosPage() {
         </motion.div>
       </div>
 
-      {/* Tipping point cards */}
+      {/* Bunker Price Tipping Point (left) | Assignment Change (right) */}
+      <div className="grid grid-cols-2 gap-5 items-stretch">
+        {/* Bunker Price Tipping Point Card */}
+        {tippingPoints.filter(tp => tp.parameter === 'Bunker Price').map((tp) => (
+          <motion.div key={tp.parameter} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
+            className="bg-white rounded-xl border border-[#DCE3ED] shadow-card p-6 relative overflow-hidden flex flex-col">
+            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-amber-500 to-coral-500" />
+
+            {/* Header with icon and title */}
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+                <Fuel className="w-5 h-5 text-amber-500" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-navy-900">{tp.parameter} Tipping Point</p>
+                <p className="text-xs text-text-secondary">When optimal assignments change</p>
+              </div>
+            </div>
+
+            {/* Key Metric */}
+            <div className="bg-coral-50 rounded-lg p-4 mb-4">
+              <p className="text-[10px] text-coral-600 font-semibold uppercase tracking-wide mb-1">Threshold</p>
+              <p className="text-2xl font-bold text-coral-500 font-mono">{Math.round(tp.value * 100)}%</p>
+              <p className="text-xs text-text-secondary mt-1">of current bunker prices</p>
+            </div>
+
+            {/* Description */}
+            <p className="text-sm text-text-secondary leading-relaxed flex-1">{tp.description}</p>
+
+            {/* Profit Impact */}
+            <div className="flex items-center gap-4 mt-4 pt-4 border-t border-[#DCE3ED]">
+              <div className="flex-1">
+                <p className="text-[10px] text-text-secondary uppercase tracking-wide mb-1">Before</p>
+                <p className="text-sm font-semibold text-teal-500 font-mono">{formatCurrency(tp.profit_before)}</p>
+              </div>
+              <TrendingDown className="w-5 h-5 text-coral-500" />
+              <div className="flex-1 text-right">
+                <p className="text-[10px] text-text-secondary uppercase tracking-wide mb-1">After</p>
+                <p className="text-sm font-semibold text-coral-500 font-mono">{formatCurrency(tp.profit_after)}</p>
+              </div>
+            </div>
+          </motion.div>
+        ))}
+
+        {/* Assignment Change Card (standalone) */}
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+          className="bg-white rounded-xl border border-[#DCE3ED] shadow-card p-6 relative overflow-hidden flex flex-col">
+          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-teal-500 to-ocean-500" />
+
+          {/* Header */}
+          <p className="text-sm font-semibold text-navy-900 mb-1">Assignment Change at Tipping Point</p>
+          <p className="text-xs text-text-secondary mb-4">How vessel-cargo assignments shift</p>
+
+          {/* Stacked Assignment Panels */}
+          <div className="flex flex-col gap-4 flex-1">
+            {/* Current Best - Top Panel */}
+            <div className="bg-teal-50 rounded-lg p-4 flex-1">
+              <p className="text-[10px] text-teal-600 font-semibold uppercase tracking-wide mb-3">Current Best</p>
+              <div className="space-y-2">
+                {tippingPoints[0]?.current_best_assignments?.map((a, idx) => (
+                  <div key={idx} className="text-[11px] text-navy-800">
+                    <span className="font-semibold">{a.vessel}</span>
+                    <span className="text-text-secondary mx-1.5">→</span>
+                    <span className="text-navy-700">{a.cargo}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* Next Best - Bottom Panel */}
+            <div className="bg-amber-50 rounded-lg p-4 flex-1">
+              <p className="text-[10px] text-amber-600 font-semibold uppercase tracking-wide mb-3">Next Best</p>
+              <div className="space-y-2">
+                {tippingPoints[0]?.next_best_assignments?.map((a, idx) => (
+                  <div key={idx} className="text-[11px] text-navy-800">
+                    <span className="font-semibold">{a.vessel}</span>
+                    <span className="text-text-secondary mx-1.5">→</span>
+                    <span className="text-navy-700">{a.cargo}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Port Delay in China Tipping Point (full width or left-aligned) */}
       <div className="grid grid-cols-2 gap-5">
-        {tippingPoints.map((tp, i) => (
-          <motion.div key={tp.parameter} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 + i * 0.05 }}
+        {tippingPoints.filter(tp => tp.parameter !== 'Bunker Price').map((tp) => (
+          <motion.div key={tp.parameter} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
             className="bg-white rounded-xl border border-[#DCE3ED] shadow-card p-5 relative overflow-hidden">
             <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-amber-500 to-coral-500" />
             <div className="flex items-start gap-3">
               <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center flex-shrink-0">
-                {tp.parameter === 'Bunker Price' ? <Fuel className="w-4 h-4 text-amber-500" /> : <AlertTriangle className="w-4 h-4 text-amber-500" />}
+                <AlertTriangle className="w-4 h-4 text-amber-500" />
               </div>
-              <div>
-                <p className="text-xs font-semibold text-navy-900 mb-1">{tp.parameter} Tipping Point: <span className="text-coral-500">{tp.parameter === 'Bunker Price' ? `${Math.round(tp.value * 100)}%` : `+${tp.value}d`}</span></p>
+              <div className="flex-1">
+                <p className="text-xs font-semibold text-navy-900 mb-1">{tp.parameter} Tipping Point: <span className="text-coral-500">+{tp.value}d</span></p>
                 <p className="text-xs text-text-secondary leading-relaxed">{tp.description}</p>
                 <div className="flex gap-4 mt-2 text-[11px]">
                   <span className="text-teal-500 font-mono">Before: {formatCurrency(tp.profit_before)}</span>
                   <TrendingDown className="w-3.5 h-3.5 text-coral-500" />
                   <span className="text-coral-500 font-mono">After: {formatCurrency(tp.profit_after)}</span>
                 </div>
+                {tp.ports_affected && tp.ports_affected.length > 0 && (
+                  <p className="mt-2 text-[9px] text-text-secondary">
+                    <span className="font-medium">Affected Ports:</span> {tp.ports_affected.join(', ')}
+                  </p>
+                )}
               </div>
             </div>
           </motion.div>
