@@ -839,6 +839,14 @@ class FullPortfolioOptimizer:
                     if daily_profit > MIN_DAILY_PROFIT and row['net_profit'] > MIN_DAILY_PROFIT * 30:
                         vessel_market_lookup[vessel.name][row['cargo']] = row
 
+        # Log coverage options per cargo
+        total_product_combos = 1
+        for cargo in cargill_cargoes:
+            n_options = len(cargo_coverage[cargo.name])
+            total_product_combos *= n_options
+            print(f"  Cargo '{cargo.name}': {n_options} vessel options")
+        print(f"  Total theoretical combinations (product): {total_product_combos}")
+
         combo_id = 0
         for coverage_combo in product(*coverage_lists):
             # Check no vessel used twice for Cargill cargoes
@@ -866,6 +874,8 @@ class FullPortfolioOptimizer:
                 heapq.heappush(top_combinations, (total_profit, combo_id, coverage_combo, list(market_assignments)))
             elif total_profit > top_combinations[0][0]:
                 heapq.heapreplace(top_combinations, (total_profit, combo_id, coverage_combo, list(market_assignments)))
+
+        print(f"  Valid portfolio combinations (no vessel reuse): {combo_id}")
 
         # Step 6: Build results from top N assignments
         if not top_combinations:
