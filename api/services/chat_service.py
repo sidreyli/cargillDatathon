@@ -25,8 +25,16 @@ When answering:
 
 Key context:
 - 4 Cargill vessels: Ann Bell, Ocean Horizon, Pacific Glory, Golden Ascent
-- 3 committed cargoes: EGA Bauxite (Kamsar→Qingdao), BHP Iron Ore (Port Hedland→Lianyungang), CSN Iron Ore (Itaguai→Qingdao)
-- Optimization maximizes total portfolio profit
+- 3 Cargill committed cargoes: EGA Bauxite (Kamsar→Qingdao), BHP Iron Ore (Port Hedland→Lianyungang), CSN Iron Ore (Itaguai→Qingdao)
+- 4 Market cargoes available: Vale Malaysia Iron Ore, BHP Iron Ore (S.Korea), Teck Coking Coal, Adaro Coal
+- 3 Market vessels available for hire: Iron Century, Pacific Vanguard, Coral Emperor
+
+IMPORTANT - Arbitrage Strategy:
+The optimizer uses an arbitrage approach where:
+1. Cargill vessels are assigned to market cargoes (where they earn higher profits)
+2. Market vessels are hired at FFA benchmark rates (~$18,000/day) to cover Cargill's committed cargoes
+3. This creates higher total portfolio profit than assigning Cargill vessels directly to Cargill cargoes
+
 - Eco speed is preferred for fuel savings unless laycan is at risk
 """
 
@@ -204,16 +212,29 @@ def _fallback_response(message: str, service) -> str:
     """Generate a response without Claude API using cached data."""
     lower = message.lower()
 
-    if "optimal" in lower or "assignment" in lower or "portfolio" in lower:
+    if "optimal" in lower or "assignment" in lower or "portfolio" in lower or "arbitrage" in lower:
         p = service.get_portfolio()
         if p and p.get("assignments"):
-            lines = ["**Optimal Portfolio Assignment:**\n"]
+            lines = ["**Optimal Portfolio Assignment (Arbitrage Strategy):**\n"]
+            lines.append("**Cargill Vessels → Market Cargoes:**")
             lines.append("| Vessel | Cargo | TCE | Profit |")
             lines.append("|--------|-------|-----|--------|")
             for a in p["assignments"]:
                 v = a["voyage"]
                 lines.append(f"| {a['vessel']} | {a['cargo']} | ${v['tce']:,.0f}/day | ${v['net_profit']:,.0f} |")
+
+            # Include market vessel hires if present
+            if p.get("market_vessel_hires"):
+                lines.append("\n**Market Vessels Hired → Cargill Cargoes:**")
+                lines.append("| Vessel | Cargo | TCE | Hire Rate |")
+                lines.append("|--------|-------|-----|-----------|")
+                for h in p["market_vessel_hires"]:
+                    hire_rate = h.get("recommended_hire_rate", h.get("hire_rate", 18000))
+                    tce = h.get("tce", 0)
+                    lines.append(f"| {h['vessel']} | {h['cargo']} | ${tce:,.0f}/day | ${hire_rate:,.0f}/day |")
+
             lines.append(f"\n**Total Profit: ${p['total_profit']:,.0f}** | Avg TCE: ${p['avg_tce']:,.0f}/day")
+            lines.append("\n*The optimizer uses arbitrage: Cargill vessels earn more on market cargoes, while market vessels are hired at FFA rates to cover Cargill commitments.*")
             return "\n".join(lines)
 
     if "bunker" in lower or "fuel" in lower:

@@ -740,7 +740,8 @@ class FullPortfolioOptimizer:
         use_eco_speed: bool = True,
         target_tce: float = 18000,
         dual_speed_mode: bool = False,
-    ) -> FullPortfolioResult:
+        top_n: int = 1,
+    ) -> List[FullPortfolioResult]:
         """
         Optimize the full portfolio using JOINT OPTIMIZATION.
 
@@ -812,15 +813,15 @@ class FullPortfolioOptimizer:
         uncoverable_cargoes = [c for c in cargill_cargoes if len(cargo_coverage[c.name]) == 0]
         if uncoverable_cargoes:
             # Some cargoes cannot be covered - return best effort result
-            return self._build_fallback_result(
+            return [self._build_fallback_result(
                 cargill_vessels, market_vessels, cargill_cargoes, market_cargoes,
                 valid_options, all_options, uncoverable_cargoes
-            )
+            )]
 
         # Step 4: Enumerate all coverage combinations using itertools.product
-        best_total_profit = float('-inf')
-        best_coverage_combo = None
-        best_market_assignments = []
+        # Track top N combinations using a list sorted by profit
+        import heapq
+        top_combinations = []  # List of (profit, coverage_combo, market_assignments)
 
         coverage_lists = [cargo_coverage[c.name] for c in cargill_cargoes]
 
@@ -838,6 +839,7 @@ class FullPortfolioOptimizer:
                     if daily_profit > MIN_DAILY_PROFIT and row['net_profit'] > MIN_DAILY_PROFIT * 30:
                         vessel_market_lookup[vessel.name][row['cargo']] = row
 
+        combo_id = 0
         for coverage_combo in product(*coverage_lists):
             # Check no vessel used twice for Cargill cargoes
             vessels_used = [c['vessel'] for c in coverage_combo]
@@ -858,57 +860,25 @@ class FullPortfolioOptimizer:
             # Total profit for this combination
             total_profit = coverage_profit + market_profit
 
-            if total_profit > best_total_profit:
-                best_total_profit = total_profit
-                best_coverage_combo = coverage_combo
-                best_market_assignments = market_assignments
+            # Use heapq to maintain top N (min-heap of negated profits)
+            combo_id += 1
+            if len(top_combinations) < top_n:
+                heapq.heappush(top_combinations, (total_profit, combo_id, coverage_combo, list(market_assignments)))
+            elif total_profit > top_combinations[0][0]:
+                heapq.heapreplace(top_combinations, (total_profit, combo_id, coverage_combo, list(market_assignments)))
 
-        # Step 6: Build result from best assignment
-        if best_coverage_combo is None:
+        # Step 6: Build results from top N assignments
+        if not top_combinations:
             # No valid combination found
-            return self._build_fallback_result(
+            return [self._build_fallback_result(
                 cargill_vessels, market_vessels, cargill_cargoes, market_cargoes,
                 valid_options, all_options, []
-            )
+            )]
 
-        # Build assignment lists
-        cargill_assignments = []
-        market_assignments = []
-        assigned_vessels = set()
-        assigned_cargoes = set()
+        # Sort by profit descending and build results
+        top_combinations.sort(key=lambda x: -x[0])
 
-        # Process Cargill cargo coverage
-        for i, coverage in enumerate(best_coverage_combo):
-            cargo_name = cargill_cargoes[i].name
-            vessel_name = coverage['vessel']
-            option = coverage['option']
-
-            if coverage['vessel_type'] == 'cargill':
-                cargill_assignments.append((vessel_name, cargo_name, option))
-            else:
-                market_assignments.append((vessel_name, cargo_name, option))
-
-            assigned_vessels.add(vessel_name)
-            assigned_cargoes.add(cargo_name)
-
-        # Add market cargo assignments for remaining Cargill vessels
-        for row in best_market_assignments:
-            cargill_assignments.append((row['vessel'], row['cargo'], row['option']))
-            assigned_vessels.add(row['vessel'])
-            assigned_cargoes.add(row['cargo'])
-
-        # Calculate totals
-        total_profit = best_total_profit
-        total_tce = sum(opt.tce for _, _, opt in cargill_assignments if opt and opt.tce)
-        total_tce += sum(opt.tce for _, _, opt in market_assignments if opt and opt.tce)
-        n_assignments = len(cargill_assignments) + len(market_assignments)
-        avg_tce = total_tce / n_assignments if n_assignments > 0 else 0
-
-        # Final unassigned lists
-        final_unassigned_vessels = [v.name for v in cargill_vessels if v.name not in assigned_vessels]
-        final_unassigned_cargoes = [c.name for c in cargill_cargoes if c.name not in assigned_cargoes]
-
-        # Market recommendations - find best options for reference
+        # Market recommendations - find best options for reference (shared across all results)
         hire_offers = {}
         market_on_cargill = valid_options[
             (valid_options['vessel_type'] == 'market') &
@@ -932,18 +902,60 @@ class FullPortfolioOptimizer:
                 if cargo not in freight_bids or row['min_freight_rate'] < freight_bids[cargo]:
                     freight_bids[cargo] = row['min_freight_rate']
 
-        return FullPortfolioResult(
-            cargill_vessel_assignments=cargill_assignments,
-            market_vessel_assignments=market_assignments,
-            unassigned_cargill_vessels=final_unassigned_vessels,
-            unassigned_cargill_cargoes=final_unassigned_cargoes,
-            total_profit=total_profit,
-            total_tce=total_tce,
-            avg_tce=avg_tce,
-            market_vessel_hire_offers=hire_offers,
-            market_cargo_freight_bids=freight_bids,
-            all_options=all_options,
-        )
+        # Build results for each top combination
+        results = []
+        for combo_profit, _, coverage_combo, combo_market_assignments in top_combinations:
+            # Build assignment lists
+            cargill_assignments = []
+            market_assignments = []
+            assigned_vessels = set()
+            assigned_cargoes = set()
+
+            # Process Cargill cargo coverage
+            for i, coverage in enumerate(coverage_combo):
+                cargo_name = cargill_cargoes[i].name
+                vessel_name = coverage['vessel']
+                option = coverage['option']
+
+                if coverage['vessel_type'] == 'cargill':
+                    cargill_assignments.append((vessel_name, cargo_name, option))
+                else:
+                    market_assignments.append((vessel_name, cargo_name, option))
+
+                assigned_vessels.add(vessel_name)
+                assigned_cargoes.add(cargo_name)
+
+            # Add market cargo assignments for remaining Cargill vessels
+            for row in combo_market_assignments:
+                cargill_assignments.append((row['vessel'], row['cargo'], row['option']))
+                assigned_vessels.add(row['vessel'])
+                assigned_cargoes.add(row['cargo'])
+
+            # Calculate totals
+            total_profit = combo_profit
+            total_tce = sum(opt.tce for _, _, opt in cargill_assignments if opt and opt.tce)
+            total_tce += sum(opt.tce for _, _, opt in market_assignments if opt and opt.tce)
+            n_assignments = len(cargill_assignments) + len(market_assignments)
+            avg_tce = total_tce / n_assignments if n_assignments > 0 else 0
+
+            # Final unassigned lists
+            final_unassigned_vessels = [v.name for v in cargill_vessels if v.name not in assigned_vessels]
+            final_unassigned_cargoes = [c.name for c in cargill_cargoes if c.name not in assigned_cargoes]
+
+            results.append(FullPortfolioResult(
+                cargill_vessel_assignments=cargill_assignments,
+                market_vessel_assignments=market_assignments,
+                unassigned_cargill_vessels=final_unassigned_vessels,
+                unassigned_cargill_cargoes=final_unassigned_cargoes,
+                total_profit=total_profit,
+                total_tce=total_tce,
+                avg_tce=avg_tce,
+                market_vessel_hire_offers=hire_offers,
+                market_cargo_freight_bids=freight_bids,
+                all_options=all_options,
+            ))
+
+        return results
 
     def _build_fallback_result(
         self,
@@ -1329,6 +1341,7 @@ class ScenarioAnalyzer:
         # Baseline
         baseline = self.optimizer.optimize_assignments(vessels, cargoes)
         baseline_assignments = frozenset((a[0], a[1]) for a in baseline.assignments)
+        baseline_profit = baseline.total_profit
 
         tipping_points = {
             'bunker': None,
@@ -1339,6 +1352,7 @@ class ScenarioAnalyzer:
 
         # Find bunker tipping point (search from 0% to max_bunker_increase_pct)
         max_multiplier = 1.0 + (max_bunker_increase_pct / 100)
+        prev_profit = baseline_profit
         for adj in np.arange(1.0, max_multiplier + 0.01, 0.01):
             portfolio = self.optimizer.optimize_assignments(
                 vessels, cargoes, bunker_adjustment=adj
@@ -1347,14 +1361,19 @@ class ScenarioAnalyzer:
 
             if current_assignments != baseline_assignments:
                 tipping_points['bunker'] = {
-                    'multiplier': adj,
-                    'change_pct': (adj - 1) * 100,
+                    'multiplier': round(adj, 2),
+                    'change_pct': round((adj - 1) * 100, 1),
                     'old_assignments': list(baseline_assignments),
                     'new_assignments': list(current_assignments),
+                    'profit_before': round(prev_profit, 0),
+                    'profit_after': round(portfolio.total_profit, 0),
+                    'description': f"At +{round((adj - 1) * 100)}% bunker price increase, assignment changes occur.",
                 }
                 break
+            prev_profit = portfolio.total_profit
 
         # Find port delay tipping point (search from 1 to max_port_delay_days inclusive)
+        prev_profit = baseline_profit
         for delay in range(1, max_port_delay_days + 1):
             portfolio = self.optimizer.optimize_assignments(
                 vessels, cargoes, extra_port_delay=delay
@@ -1366,8 +1385,12 @@ class ScenarioAnalyzer:
                     'days': delay,
                     'old_assignments': list(baseline_assignments),
                     'new_assignments': list(current_assignments),
+                    'profit_before': round(prev_profit, 0),
+                    'profit_after': round(portfolio.total_profit, 0),
+                    'description': f"At +{delay} days port delay, assignment changes occur.",
                 }
                 break
+            prev_profit = portfolio.total_profit
 
         return tipping_points
 

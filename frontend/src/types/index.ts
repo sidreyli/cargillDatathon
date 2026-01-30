@@ -82,6 +82,11 @@ export interface PortfolioResult {
   market_vessel_hires?: Assignment[];
 }
 
+export interface PortfolioResponse {
+  portfolios: PortfolioResult[];
+  best: PortfolioResult | null;
+}
+
 export interface ScenarioPoint {
   parameter_value: number;
   total_profit: number;

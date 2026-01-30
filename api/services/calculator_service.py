@@ -256,17 +256,21 @@ class CalculatorService:
 
     def _compute_portfolio(self):
         t = time.perf_counter()
-        logger.info("Computing optimal portfolio (full optimization)...")
-        full_result = self.full_optimizer.optimize_full_portfolio(
+        logger.info("Computing optimal portfolio (full optimization with top 3)...")
+        results = self.full_optimizer.optimize_full_portfolio(
             cargill_vessels=self.cargill_vessels,
             market_vessels=self.market_vessels,
             cargill_cargoes=self.cargill_cargoes,
             market_cargoes=self.market_cargoes,
             target_tce=18000,
             dual_speed_mode=True,
+            top_n=3,
         )
-        self._portfolio_cache = _full_portfolio_to_dict(full_result, self.vessels_map, self.cargoes_map)
-        logger.info("Portfolio computed in %.2fs", time.perf_counter() - t)
+        self._portfolio_cache = [
+            _full_portfolio_to_dict(result, self.vessels_map, self.cargoes_map)
+            for result in results
+        ]
+        logger.info("Portfolio computed in %.2fs (%d options)", time.perf_counter() - t, len(results))
 
     def _compute_all_voyages(self):
         t = time.perf_counter()
@@ -394,7 +398,11 @@ class CalculatorService:
         ]
 
     def get_portfolio(self) -> dict:
-        return self._portfolio_cache or {}
+        portfolios = self._portfolio_cache or []
+        return {
+            "portfolios": portfolios,
+            "best": portfolios[0] if portfolios else None,
+        }
 
     def get_all_voyages(self) -> List[dict]:
         return self._all_voyages_cache or []

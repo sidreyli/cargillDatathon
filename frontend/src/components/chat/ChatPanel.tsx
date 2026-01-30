@@ -8,11 +8,13 @@ import { streamChat, api } from '../../api/client';
 
 const MOCK_RESPONSES: Record<string, string> = {
   'What is the optimal vessel assignment?':
-    '**Optimal Portfolio Assignment:**\n\n| Vessel | Cargo | TCE | Profit |\n|--------|-------|-----|--------|\n| Ann Bell | BHP Iron Ore | $19,920/day | $249K |\n| Ocean Horizon | CSN Iron Ore | $33,290/day | $1.47M |\n| Pacific Glory | EGA Bauxite | $38,920/day | $2.38M |\n\n**Total Portfolio Profit: $2.35M** | Avg TCE: $24,213/day\n\nGolden Ascent is held in reserve — available for market cargo opportunities.',
+    '**Optimal Portfolio Assignment (Arbitrage Strategy):**\n\n**Cargill Vessels → Market Cargoes:**\n| Vessel | Cargo | TCE | Profit |\n|--------|-------|-----|--------|\n| Ann Bell | Vale Malaysia Iron Ore | $22,614/day | $916K |\n| Ocean Horizon | BHP Iron Ore (S.Korea) | $27,036/day | $351K |\n| Pacific Glory | Teck Coking Coal | $29,426/day | $708K |\n| Golden Ascent | Adaro Coal | $35,181/day | $1.17M |\n\n**Market Vessels Hired → Cargill Cargoes:**\n| Vessel | Cargo | TCE | Hire Rate |\n|--------|-------|-----|--------|\n| Iron Century | EGA Bauxite | $38,782/day | $20,784/day |\n| Pacific Vanguard | BHP Iron Ore (China) | $16,661/day | $18,000/day |\n| Coral Emperor | CSN Iron Ore | $31,375/day | $13,376/day |\n\n**Total Portfolio Profit: $5.75M** | Avg TCE: $28,725/day\n\nThe optimizer uses an **arbitrage strategy**: Cargill vessels earn more on certain market cargoes, while market vessels are hired at FFA rates to cover Cargill commitments.',
   'What if bunker prices rise 20%':
-    '**Bunker Sensitivity Analysis (+20%):**\n\nAt **120% of current bunker prices**, the assignment changes:\n- Ocean Horizon is **replaced by Golden Ascent** for CSN Iron Ore\n- Golden Ascent has lower fuel consumption on the eco route\n\n| Metric | Current | +20% Bunker |\n|--------|---------|-------------|\n| Total Profit | $2.35M | $1.71M |\n| Avg TCE | $24,213 | $19,800 |\n| Profit Impact | — | **-$640K (-27%)** |\n\nThe tipping point is at **118%** — beyond this, the cheaper vessel becomes optimal.',
+    '**Bunker Sensitivity Analysis (+20%):**\n\nAt **120% of current bunker prices**, vessel assignments may shift:\n- Longer voyages become less profitable\n- Vessels with better fuel efficiency gain advantage\n\n| Metric | Current | +20% Bunker |\n|--------|---------|-------------|\n| Total Profit | $5.75M | ~$4.9M |\n| Avg TCE | $28,725 | ~$24,500 |\n| Profit Impact | — | **~-$850K (-15%)** |\n\nThe arbitrage strategy remains optimal but with reduced margins.',
   'Compare vessels for EGA Bauxite':
-    '**EGA Bauxite — Vessel Comparison:**\n\n| Metric | Pacific Glory ★ | Ann Bell | Ocean Horizon | Golden Ascent |\n|--------|----------------|----------|---------------|---------------|\n| TCE | **$38,920** | $38,120 | $34,780 | $35,910 |\n| Profit | **$2.38M** | $2.46M | $2.24M | $2.33M |\n| Days | 53.1 | 56.2 | 55.8 | 58.6 |\n| Margin | +3d | +6d | +4d | +2d |\n| Bunker Port | Fujairah | Fujairah | Fujairah | Fujairah |\n\nPacific Glory offers the **highest TCE** due to efficient fuel profile and favorable positioning from Gwangyang.',
+    '**EGA Bauxite — Vessel Comparison:**\n\n| Metric | Iron Century ★ | Ann Bell | Ocean Horizon | Pacific Glory | Golden Ascent |\n|--------|----------------|----------|---------------|---------------|---------------|\n| TCE | **$38,782** | $38,120 | $34,780 | $38,920 | $35,910 |\n| Profit | **$2.03M** | $2.46M | $2.24M | $2.38M | $2.33M |\n| Days | 54.8 | 56.2 | 55.8 | 53.1 | 58.6 |\n| Margin | +5d | +6d | +4d | +3d | +2d |\n| Bunker Port | Fujairah | Fujairah | Fujairah | Fujairah | Fujairah |\n\nIn the optimized portfolio, **Iron Century** (market vessel) is hired to cover EGA Bauxite at $20,784/day, freeing Cargill vessels for higher-margin market cargoes.',
+  'explain the arbitrage':
+    '**Arbitrage Strategy Explained:**\n\nThe optimizer discovered that Cargill vessels can earn **higher profits** on certain market cargoes than on Cargill\'s own committed cargoes.\n\n**How it works:**\n1. **Cargill vessels** are assigned to high-margin market cargoes (Vale, Teck, Adaro, BHP S.Korea)\n2. **Market vessels** are hired at FFA benchmark rates (~$18,000/day) to cover Cargill\'s committed cargoes\n3. The **profit differential** creates arbitrage value\n\n**Example:**\n- Golden Ascent earns $35,181/day TCE on Adaro Coal (market cargo)\n- Market vessel Coral Emperor hired at $13,376/day for CSN Iron Ore\n- **Net gain** from this swap: significant profit uplift\n\n**Total Portfolio Profit: $5.75M** — higher than having Cargill vessels on Cargill cargoes directly.',
 };
 
 function getMockResponse(input: string): string {
@@ -20,7 +22,11 @@ function getMockResponse(input: string): string {
   for (const [key, val] of Object.entries(MOCK_RESPONSES)) {
     if (lower.includes(key.toLowerCase().slice(0, 20))) return val;
   }
-  return "I can help analyze vessel assignments, run scenarios, compare voyages, and check port congestion. Try asking about the optimal assignment or a specific what-if scenario!";
+  // Check for arbitrage-related questions
+  if (lower.includes('arbitrage') || lower.includes('strategy') || lower.includes('why market')) {
+    return MOCK_RESPONSES['explain the arbitrage'];
+  }
+  return "I can help analyze vessel assignments, run scenarios, compare voyages, and explain the arbitrage strategy. Try asking about the optimal assignment, market vessel hires, or a specific what-if scenario!";
 }
 
 export default function ChatPanel() {

@@ -13,6 +13,7 @@ import {
 import { usePortfolio, useVessels, useCargoes } from '../../api/hooks';
 import {
   mockPortfolio,
+  mockPortfolios,
   mockCargoes,
   mockVessels,
 } from '../../data/mockData';
@@ -164,21 +165,25 @@ function AssignmentCard({ vessel, cargo, vesselType, cargoType, profit, tce, day
 }
 
 export default function DashboardPage() {
+  // Portfolio rank selection (0 = best, 1 = second best, 2 = third best)
+  const [selectedRank, setSelectedRank] = useState(0);
+
   // Fetch from API
-  const { data: apiPortfolio, isLoading: loadingPortfolio } = usePortfolio();
+  const { data: apiPortfolios, isLoading: loadingPortfolio } = usePortfolio();
   const { data: apiVessels } = useVessels();
   const { data: apiCargoes } = useCargoes();
 
   // Use API data if available, otherwise fall back to mock
-  const portfolio = apiPortfolio || mockPortfolio;
+  const portfolios = apiPortfolios || mockPortfolios;
+  const portfolio = portfolios[selectedRank] || portfolios[0] || mockPortfolio;
   const vessels = apiVessels || mockVessels;
   const cargoes = apiCargoes || mockCargoes;
 
   // Separate assignments by type
-  const cargillVesselAssignments = portfolio.assignments?.filter((a: any) => 
+  const cargillVesselAssignments = portfolio.assignments?.filter((a: any) =>
     a.vessel_type === 'cargill' || a.voyage?.vessel_type === 'cargill'
   ) || portfolio.assignments || [];
-  
+
   const marketVesselHires = portfolio.market_vessel_hires || [];
 
   const profit = useCounter(portfolio.total_profit || 0, 1400, 100);
@@ -196,6 +201,46 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6 max-w-[1400px]">
+      {/* Portfolio Selection Toggle */}
+      {portfolios.length > 1 && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-xl border border-[#DCE3ED] shadow-[0_1px_3px_rgba(11,37,69,0.08)] p-3"
+        >
+          <div className="flex items-center gap-4">
+            <span className="text-xs font-semibold uppercase tracking-wide text-[#6B7B8D] whitespace-nowrap">
+              Portfolio Options
+            </span>
+            <div className="flex gap-1 bg-[#F1F5F9] rounded-lg p-1 flex-1">
+              {portfolios.map((p: any, i: number) => (
+                <button
+                  key={i}
+                  onClick={() => setSelectedRank(i)}
+                  className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+                    selectedRank === i
+                      ? 'bg-white shadow-sm text-[#134074] border border-[#1B6CA8]/20'
+                      : 'text-[#6B7B8D] hover:text-[#0B2545] hover:bg-white/50'
+                  }`}
+                >
+                  <span className={`text-xs font-bold ${selectedRank === i ? 'text-[#1B6CA8]' : 'opacity-60'}`}>
+                    #{i + 1}
+                  </span>
+                  <span className={`font-semibold ${selectedRank === i ? 'text-[#0FA67F]' : ''}`}>
+                    ${((p.total_profit || 0) / 1e6).toFixed(2)}M
+                  </span>
+                  {i === 0 && (
+                    <span className="text-[9px] font-bold uppercase bg-[#0FA67F]/10 text-[#0FA67F] px-1.5 py-0.5 rounded">
+                      Best
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* KPI Row */}
       <div className="grid grid-cols-4 gap-4">
         <KPICard idx={0} icon={<TrendingUp className="w-4 h-4" />} label="Total Portfolio Profit" value={formatCurrency(profit)} accent="#0FA67F" />

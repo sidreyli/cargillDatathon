@@ -11,11 +11,26 @@ export const mockVessels: Vessel[] = [
   { name: 'Golden Ascent', dwt: 179965, hire_rate: 13950, speed_laden: 13.0, speed_laden_eco: 11.8, speed_ballast: 14.0, speed_ballast_eco: 12.3, current_port: 'Fangcheng', etd: '8 Mar 2026', bunker_rob_vlsfo: 793.3, bunker_rob_mgo: 17.1, is_cargill: true },
 ];
 
-// ─── Cargoes ───────────────────────────────────────────────
+// ─── Cargoes (Cargill committed) ───────────────────────────
 export const mockCargoes: Cargo[] = [
   { name: 'EGA Bauxite', customer: 'EGA', commodity: 'Bauxite', quantity: 180000, quantity_tolerance: 0.10, laycan_start: '2 Apr 2026', laycan_end: '10 Apr 2026', freight_rate: 23.0, load_port: 'Kamsar', discharge_port: 'Qingdao', load_rate: 30000, discharge_rate: 25000, port_cost_load: 0, port_cost_discharge: 0, commission: 0.0125, is_cargill: true },
   { name: 'BHP Iron Ore', customer: 'BHP', commodity: 'Iron Ore', quantity: 160000, quantity_tolerance: 0.10, laycan_start: '7 Mar 2026', laycan_end: '11 Mar 2026', freight_rate: 9.0, load_port: 'Port Hedland', discharge_port: 'Lianyungang', load_rate: 80000, discharge_rate: 30000, port_cost_load: 260000, port_cost_discharge: 120000, commission: 0.0375, is_cargill: true },
   { name: 'CSN Iron Ore', customer: 'CSN', commodity: 'Iron Ore', quantity: 180000, quantity_tolerance: 0.10, laycan_start: '1 Apr 2026', laycan_end: '8 Apr 2026', freight_rate: 22.30, load_port: 'Itaguai', discharge_port: 'Qingdao', load_rate: 60000, discharge_rate: 30000, port_cost_load: 75000, port_cost_discharge: 90000, commission: 0.0375, is_cargill: true },
+];
+
+// ─── Market Cargoes ────────────────────────────────────────
+export const mockMarketCargoes: Cargo[] = [
+  { name: 'Vale Malaysia Iron Ore', customer: 'Vale', commodity: 'Iron Ore', quantity: 170000, quantity_tolerance: 0.10, laycan_start: '15 Mar 2026', laycan_end: '22 Mar 2026', freight_rate: 18.5, load_port: 'Tubarao', discharge_port: 'Port Klang', load_rate: 70000, discharge_rate: 35000, port_cost_load: 85000, port_cost_discharge: 65000, commission: 0.035, is_cargill: false },
+  { name: 'BHP Iron Ore (S.Korea)', customer: 'BHP', commodity: 'Iron Ore', quantity: 165000, quantity_tolerance: 0.10, laycan_start: '10 Mar 2026', laycan_end: '18 Mar 2026', freight_rate: 10.5, load_port: 'Port Hedland', discharge_port: 'Gwangyang', load_rate: 80000, discharge_rate: 40000, port_cost_load: 260000, port_cost_discharge: 95000, commission: 0.0375, is_cargill: false },
+  { name: 'Teck Coking Coal', customer: 'Teck', commodity: 'Coking Coal', quantity: 155000, quantity_tolerance: 0.10, laycan_start: '20 Mar 2026', laycan_end: '28 Mar 2026', freight_rate: 28.0, load_port: 'Vancouver', discharge_port: 'Qingdao', load_rate: 25000, discharge_rate: 30000, port_cost_load: 95000, port_cost_discharge: 90000, commission: 0.03, is_cargill: false },
+  { name: 'Adaro Coal', customer: 'Adaro', commodity: 'Thermal Coal', quantity: 175000, quantity_tolerance: 0.10, laycan_start: '12 Mar 2026', laycan_end: '20 Mar 2026', freight_rate: 12.0, load_port: 'Taboneo', discharge_port: 'Mundra', load_rate: 45000, discharge_rate: 35000, port_cost_load: 55000, port_cost_discharge: 70000, commission: 0.025, is_cargill: false },
+];
+
+// ─── Market Vessels (hired for Cargill cargoes) ────────────
+export const mockMarketVessels: Vessel[] = [
+  { name: 'Iron Century', dwt: 182100, hire_rate: 20784, speed_laden: 13.2, speed_laden_eco: 11.8, speed_ballast: 14.0, speed_ballast_eco: 12.5, current_port: 'Singapore', etd: '28 Feb 2026', bunker_rob_vlsfo: 350.0, bunker_rob_mgo: 55.0, is_cargill: false },
+  { name: 'Pacific Vanguard', dwt: 179500, hire_rate: 18000, speed_laden: 13.5, speed_laden_eco: 12.0, speed_ballast: 14.2, speed_ballast_eco: 12.6, current_port: 'Hong Kong', etd: '2 Mar 2026', bunker_rob_vlsfo: 420.0, bunker_rob_mgo: 62.0, is_cargill: false },
+  { name: 'Coral Emperor', dwt: 181200, hire_rate: 13376, speed_laden: 13.0, speed_laden_eco: 11.5, speed_ballast: 13.8, speed_ballast_eco: 12.2, current_port: 'Durban', etd: '5 Mar 2026', bunker_rob_vlsfo: 380.0, bunker_rob_mgo: 48.0, is_cargill: false },
 ];
 
 // ─── All Voyage Results (matrix) ───────────────────────────
@@ -38,20 +53,93 @@ export const mockAllVoyages: VoyageResult[] = [
   { vessel: 'Golden Ascent', cargo: 'CSN Iron Ore', speed_type: 'eco', can_make_laycan: true, arrival_date: '2026-04-07', laycan_end: '2026-04-08', days_margin: 1.0, total_days: 71.2, ballast_days: 27.1, laden_days: 30.8, load_days: 3.4, discharge_days: 6.8, waiting_days: 0, cargo_qty: 176465, gross_freight: 3935174, net_freight: 3787581, commission_cost: 147593, total_bunker_cost: 1012600, bunker_cost_vlsfo: 849400, bunker_cost_mgo: 163200, hire_cost: 993240, port_costs: 165000, misc_costs: 15000, net_profit: 1601741, tce: 34280, vlsfo_consumed: 1734, mgo_consumed: 252, bunker_port: 'Gibraltar', bunker_savings: 52800 },
 ];
 
-// ─── Optimal Portfolio ─────────────────────────────────────
+// ─── Cargill Vessels on Market Cargoes (optimized assignments) ───
+export const mockMarketCargoVoyages: VoyageResult[] = [
+  // Ann Bell → Vale Malaysia Iron Ore
+  { vessel: 'Ann Bell', cargo: 'Vale Malaysia Iron Ore (Brazil-Malaysia)', speed_type: 'eco', can_make_laycan: true, arrival_date: '2026-03-18', laycan_end: '2026-03-22', days_margin: 4.0, total_days: 48.5, ballast_days: 12.2, laden_days: 24.8, load_days: 2.7, discharge_days: 5.4, waiting_days: 0, cargo_qty: 167000, gross_freight: 3089500, net_freight: 2981270, commission_cost: 108230, total_bunker_cost: 762400, bunker_cost_vlsfo: 638200, bunker_cost_mgo: 124200, hire_cost: 570125, port_costs: 150000, misc_costs: 15000, net_profit: 915509, tce: 22614, vlsfo_consumed: 1302, mgo_consumed: 191, bunker_port: 'Gibraltar', bunker_savings: 38500, vessel_type: 'cargill', cargo_type: 'market' },
+  // Ocean Horizon → BHP Iron Ore (S.Korea)
+  { vessel: 'Ocean Horizon', cargo: 'BHP Iron Ore (Australia-S.Korea)', speed_type: 'eco', can_make_laycan: true, arrival_date: '2026-03-14', laycan_end: '2026-03-18', days_margin: 4.0, total_days: 26.8, ballast_days: 5.2, laden_days: 12.4, load_days: 2.3, discharge_days: 4.6, waiting_days: 0, cargo_qty: 162000, gross_freight: 1701000, net_freight: 1637213, commission_cost: 63788, total_bunker_cost: 398600, bunker_cost_vlsfo: 334200, bunker_cost_mgo: 64400, hire_cost: 422100, port_costs: 355000, misc_costs: 15000, net_profit: 350978, tce: 27036, vlsfo_consumed: 682, mgo_consumed: 99, bunker_port: 'Singapore', bunker_savings: 15200, vessel_type: 'cargill', cargo_type: 'market' },
+  // Pacific Glory → Teck Coking Coal
+  { vessel: 'Pacific Glory', cargo: 'Teck Coking Coal (Canada-China)', speed_type: 'eco', can_make_laycan: true, arrival_date: '2026-03-24', laycan_end: '2026-03-28', days_margin: 4.0, total_days: 42.3, ballast_days: 8.6, laden_days: 21.2, load_days: 6.9, discharge_days: 5.8, waiting_days: 0, cargo_qty: 152000, gross_freight: 4256000, net_freight: 4128320, commission_cost: 127680, total_bunker_cost: 685200, bunker_cost_vlsfo: 574400, bunker_cost_mgo: 110800, hire_cost: 626040, port_costs: 185000, misc_costs: 15000, net_profit: 708408, tce: 29426, vlsfo_consumed: 1172, mgo_consumed: 171, bunker_port: 'Panama', bunker_savings: 28400, vessel_type: 'cargill', cargo_type: 'market' },
+  // Golden Ascent → Adaro Coal
+  { vessel: 'Golden Ascent', cargo: 'Adaro Coal (Indonesia-India)', speed_type: 'eco', can_make_laycan: true, arrival_date: '2026-03-16', laycan_end: '2026-03-20', days_margin: 4.0, total_days: 38.2, ballast_days: 9.8, laden_days: 16.4, load_days: 4.3, discharge_days: 5.6, waiting_days: 0, cargo_qty: 172000, gross_freight: 2064000, net_freight: 2012400, commission_cost: 51600, total_bunker_cost: 412800, bunker_cost_vlsfo: 346100, bunker_cost_mgo: 66700, hire_cost: 532890, port_costs: 125000, misc_costs: 15000, net_profit: 1169745, tce: 35181, vlsfo_consumed: 706, mgo_consumed: 103, bunker_port: 'Singapore', bunker_savings: 18900, vessel_type: 'cargill', cargo_type: 'market' },
+];
+
+// ─── Market Vessels on Cargill Cargoes (hired to cover commitments) ───
+export const mockMarketVesselVoyages: VoyageResult[] = [
+  // Iron Century → EGA Bauxite (hired at ~$20,784/day)
+  { vessel: 'Iron Century', cargo: 'EGA Bauxite (Guinea-China)', speed_type: 'eco', can_make_laycan: true, arrival_date: '2026-04-05', laycan_end: '2026-04-10', days_margin: 5.0, total_days: 54.8, ballast_days: 17.5, laden_days: 21.8, load_days: 6.6, discharge_days: 7.2, waiting_days: 0, cargo_qty: 178500, gross_freight: 4105500, net_freight: 4054182, commission_cost: 51318, total_bunker_cost: 868200, bunker_cost_vlsfo: 727600, bunker_cost_mgo: 140600, hire_cost: 1138963, port_costs: 0, misc_costs: 15000, net_profit: 2032019, tce: 38782, vlsfo_consumed: 1485, mgo_consumed: 217, bunker_port: 'Fujairah', bunker_savings: 42100, vessel_type: 'market', cargo_type: 'cargill' },
+  // Pacific Vanguard → BHP Iron Ore China (hired at FFA ~$18,000/day)
+  { vessel: 'Pacific Vanguard', cargo: 'BHP Iron Ore (Australia-China)', speed_type: 'eco', can_make_laycan: true, arrival_date: '2026-03-09', laycan_end: '2026-03-11', days_margin: 2.0, total_days: 31.4, ballast_days: 7.2, laden_days: 14.5, load_days: 2.2, discharge_days: 5.8, waiting_days: 0, cargo_qty: 176000, gross_freight: 1584000, net_freight: 1524600, commission_cost: 59400, total_bunker_cost: 485600, bunker_cost_vlsfo: 407100, bunker_cost_mgo: 78500, hire_cost: 565200, port_costs: 380000, misc_costs: 15000, net_profit: 78800, tce: 16661, vlsfo_consumed: 831, mgo_consumed: 121, bunker_port: 'Singapore', bunker_savings: 19800, vessel_type: 'market', cargo_type: 'cargill' },
+  // Coral Emperor → CSN Iron Ore (hired at ~$13,376/day)
+  { vessel: 'Coral Emperor', cargo: 'CSN Iron Ore (Brazil-China)', speed_type: 'eco', can_make_laycan: true, arrival_date: '2026-04-06', laycan_end: '2026-04-08', days_margin: 2.0, total_days: 67.5, ballast_days: 24.2, laden_days: 29.4, load_days: 3.3, discharge_days: 6.5, waiting_days: 0, cargo_qty: 177600, gross_freight: 3960480, net_freight: 3811962, commission_cost: 148518, total_bunker_cost: 1052400, bunker_cost_vlsfo: 882900, bunker_cost_mgo: 169500, hire_cost: 902880, port_costs: 165000, misc_costs: 15000, net_profit: 1675682, tce: 31375, vlsfo_consumed: 1802, mgo_consumed: 261, bunker_port: 'Gibraltar', bunker_savings: 55200, vessel_type: 'market', cargo_type: 'cargill' },
+];
+
+// ─── Optimal Portfolio (Rank #1) ──────────────────────────────
 export const mockPortfolio: PortfolioResult = {
+  // Cargill vessels assigned to market cargoes (arbitrage strategy)
   assignments: [
-    { vessel: 'ANN BELL', cargo: 'Vale Malaysia Iron Ore (Brazil-Malaysia)', voyage: { ...mockAllVoyages[0], vessel_type: 'cargill', cargo_type: 'market', net_profit: 915509, tce: 22614 } },
-    { vessel: 'OCEAN HORIZON', cargo: 'BHP Iron Ore (Australia-S.Korea)', voyage: { ...mockAllVoyages[1], vessel_type: 'cargill', cargo_type: 'market', net_profit: 350978, tce: 27036 } },
-    { vessel: 'PACIFIC GLORY', cargo: 'Teck Coking Coal (Canada-China)', voyage: { ...mockAllVoyages[2], vessel_type: 'cargill', cargo_type: 'market', net_profit: 708408, tce: 29426 } },
-    { vessel: 'GOLDEN ASCENT', cargo: 'Adaro Coal (Indonesia-India)', voyage: { ...mockAllVoyages[3], vessel_type: 'cargill', cargo_type: 'market', net_profit: 1169745, tce: 35181 } },
+    { vessel: 'ANN BELL', cargo: 'Vale Malaysia Iron Ore (Brazil-Malaysia)', voyage: mockMarketCargoVoyages[0] },
+    { vessel: 'OCEAN HORIZON', cargo: 'BHP Iron Ore (Australia-S.Korea)', voyage: mockMarketCargoVoyages[1] },
+    { vessel: 'PACIFIC GLORY', cargo: 'Teck Coking Coal (Canada-China)', voyage: mockMarketCargoVoyages[2] },
+    { vessel: 'GOLDEN ASCENT', cargo: 'Adaro Coal (Indonesia-India)', voyage: mockMarketCargoVoyages[3] },
+  ],
+  // Market vessels hired to cover Cargill committed cargoes
+  market_vessel_hires: [
+    { vessel: 'IRON CENTURY', cargo: 'EGA Bauxite (Guinea-China)', voyage: mockMarketVesselVoyages[0] },
+    { vessel: 'PACIFIC VANGUARD', cargo: 'BHP Iron Ore (Australia-China)', voyage: mockMarketVesselVoyages[1] },
+    { vessel: 'CORAL EMPEROR', cargo: 'CSN Iron Ore (Brazil-China)', voyage: mockMarketVesselVoyages[2] },
   ],
   unassigned_vessels: [],
   unassigned_cargoes: [],
-  total_profit: 5803558,
-  total_tce: 115657,
-  avg_tce: 28914,
+  total_profit: 5754425,
+  total_tce: 201075,
+  avg_tce: 28725,
 };
+
+// ─── Alternative Portfolio (Rank #2) ──────────────────────────
+const mockPortfolio2: PortfolioResult = {
+  // Different assignment strategy: ANN BELL on Cargill cargo directly
+  assignments: [
+    { vessel: 'ANN BELL', cargo: 'EGA Bauxite (Guinea-China)', voyage: mockAllVoyages[0] },
+    { vessel: 'OCEAN HORIZON', cargo: 'BHP Iron Ore (Australia-S.Korea)', voyage: mockMarketCargoVoyages[1] },
+    { vessel: 'PACIFIC GLORY', cargo: 'Teck Coking Coal (Canada-China)', voyage: mockMarketCargoVoyages[2] },
+    { vessel: 'GOLDEN ASCENT', cargo: 'Adaro Coal (Indonesia-India)', voyage: mockMarketCargoVoyages[3] },
+  ],
+  market_vessel_hires: [
+    { vessel: 'PACIFIC VANGUARD', cargo: 'BHP Iron Ore (Australia-China)', voyage: mockMarketVesselVoyages[1] },
+    { vessel: 'CORAL EMPEROR', cargo: 'CSN Iron Ore (Brazil-China)', voyage: mockMarketVesselVoyages[2] },
+  ],
+  unassigned_vessels: [],
+  unassigned_cargoes: [],
+  total_profit: 5412890,
+  total_tce: 189400,
+  avg_tce: 27062,
+};
+
+// ─── Alternative Portfolio (Rank #3) ──────────────────────────
+const mockPortfolio3: PortfolioResult = {
+  // Conservative strategy: More Cargill vessels on Cargill cargoes
+  assignments: [
+    { vessel: 'ANN BELL', cargo: 'EGA Bauxite (Guinea-China)', voyage: mockAllVoyages[0] },
+    { vessel: 'OCEAN HORIZON', cargo: 'CSN Iron Ore (Brazil-China)', voyage: mockAllVoyages[5] },
+    { vessel: 'PACIFIC GLORY', cargo: 'Teck Coking Coal (Canada-China)', voyage: mockMarketCargoVoyages[2] },
+    { vessel: 'GOLDEN ASCENT', cargo: 'BHP Iron Ore (Australia-China)', voyage: mockAllVoyages[10] },
+  ],
+  market_vessel_hires: [],
+  unassigned_vessels: [],
+  unassigned_cargoes: [],
+  total_profit: 4986320,
+  total_tce: 174520,
+  avg_tce: 24934,
+};
+
+// ─── Top 3 Portfolios Array ──────────────────────────────────
+export const mockPortfolios: PortfolioResult[] = [
+  mockPortfolio,   // Rank #1
+  mockPortfolio2,  // Rank #2
+  mockPortfolio3,  // Rank #3
+];
 
 // ─── Bunker Sensitivity ────────────────────────────────────
 export const mockBunkerSensitivity: ScenarioPoint[] = [
@@ -199,14 +287,21 @@ export const portCoordinates: Record<string, { lat: number; lng: number }> = {
   'Vizag': { lat: 17.69, lng: 83.22 },
   'Caofeidian': { lat: 39.22, lng: 118.53 },
   'Rizhao': { lat: 35.38, lng: 119.53 },
+  // Market cargo ports
+  'Tubarao': { lat: -20.28, lng: -40.25 },
+  'Port Klang': { lat: 3.00, lng: 101.39 },
+  'Vancouver': { lat: 49.29, lng: -123.11 },
+  'Taboneo': { lat: -3.52, lng: 114.55 },
+  'Hong Kong': { lat: 22.30, lng: 114.17 },
+  'Panama': { lat: 9.00, lng: -79.52 },
 };
 
 // ─── Suggested chatbot prompts ─────────────────────────────
 export const suggestedPrompts = [
   'What is the optimal vessel assignment?',
+  'Explain the arbitrage strategy',
   'What if bunker prices rise 20%?',
   'Compare vessels for EGA Bauxite',
   'Which ports have highest congestion?',
-  'Explain the bunkering strategy',
   'What are the tipping points?',
 ];
