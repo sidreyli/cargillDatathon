@@ -20,11 +20,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
-# Fix line endings and make executable
-RUN dos2unix start.sh && chmod +x start.sh
-
 # Expose port (Railway sets PORT env var)
 EXPOSE 8000
 
-# Run the application
-CMD ["./start.sh"]
+# Run the application using Python (more reliable than shell)
+CMD ["python", "run.py"]
