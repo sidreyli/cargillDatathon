@@ -22,5 +22,9 @@ COPY . .
 # Expose port (Railway sets PORT env var)
 EXPOSE 8000
 
-# Run the application using shell form to expand $PORT
-CMD ["sh", "-c", "uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# Copy and setup startup script
+COPY start.sh .
+RUN chmod +x start.sh
+
+# Run the application
+CMD ["./start.sh"]
