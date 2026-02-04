@@ -13,23 +13,19 @@ You help analysts understand vessel-cargo assignments, voyage economics, scenari
 ## Fleet Overview
 
 **4 Cargill Vessels** (company-owned, with daily hire costs):
-| Vessel | DWT | Hire $/day | Current Port | ETD |
-|--------|-----|-----------|--------------|-----|
-| ANN BELL | 180,803 | $11,750 | Qingdao | 25 Feb |
-| OCEAN HORIZON | 181,550 | $15,750 | Map Ta Phut | 1 Mar |
-| PACIFIC GLORY | 182,320 | $14,800 | Gwangyang | 10 Mar |
-| GOLDEN ASCENT | 179,965 | $13,950 | Fangcheng | 8 Mar |
+- ANN BELL — 180,803 DWT, $11,750/day, at Qingdao (ETD 25 Feb)
+- OCEAN HORIZON — 181,550 DWT, $15,750/day, at Map Ta Phut (ETD 1 Mar)
+- PACIFIC GLORY — 182,320 DWT, $14,800/day, at Gwangyang (ETD 10 Mar)
+- GOLDEN ASCENT — 179,965 DWT, $13,950/day, at Fangcheng (ETD 8 Mar)
 
 **11 Market Vessels** (available for hire at FFA benchmark ~$18,000/day):
 Atlantic Fortune, Pacific Vanguard, Coral Emperor, Everest Ocean, Polaris Spirit,
 Iron Century, Mountain Trader, Navis Pride, Aurora Sky, Zenith Glory, Titan Legacy
 
 **3 Cargill Committed Cargoes** (must fulfill):
-| Cargo | Route | Qty | Rate | Laycan |
-|-------|-------|-----|------|--------|
-| EGA Bauxite | Kamsar->Qingdao | 180k MT | $23.00/MT | 2-10 Apr |
-| BHP Iron Ore | Pt Hedland->Lianyungang | 160k MT | $9.00/MT | 7-11 Mar |
-| CSN Iron Ore | Itaguai->Qingdao | 180k MT | $22.30/MT | 1-8 Apr |
+- EGA Bauxite — 180k MT at $23.00/MT, Kamsar -> Qingdao, laycan 2-10 Apr
+- BHP Iron Ore — 160k MT at $9.00/MT, Pt Hedland -> Lianyungang, laycan 7-11 Mar
+- CSN Iron Ore — 180k MT at $22.30/MT, Itaguai -> Qingdao, laycan 1-8 Apr
 
 **8 Market Cargoes** (bidding opportunities):
 Rio Tinto Iron Ore (Australia-China), Vale Iron Ore (Brazil-China),
@@ -71,6 +67,7 @@ The optimizer uses an arbitrage approach:
 - Eco speed preferred for fuel savings unless laycan is at risk
 
 ## Response Guidelines
+- NEVER use markdown tables (| col | col |) — they break in the chat UI. Use bullet points, numbered lists, or bold labels instead.
 - Use precise numbers from tool results
 - Format currency as USD with commas (e.g., $1,234,567)
 - Reference specific vessels and cargoes by name
@@ -317,24 +314,23 @@ def _fallback_response(message: str, service) -> str:
         p = service.get_portfolio()
         if p and p.get("best"):
             best = p["best"]
-            lines = ["**Optimal Portfolio Assignment (Arbitrage Strategy):**\n"]
+            lines = ["**Optimal Portfolio Assignment (Arbitrage Strategy)**\n"]
             lines.append("**Cargill Vessels -> Market Cargoes:**")
-            lines.append("| Vessel | Cargo | TCE | Profit |")
-            lines.append("|--------|-------|-----|--------|")
-            for a in best.get("assignments", []):
+            for i, a in enumerate(best.get("assignments", []), 1):
                 v = a["voyage"]
-                lines.append(f"| {a['vessel']} | {a['cargo']} | ${v['tce']:,.0f}/day | ${v['net_profit']:,.0f} |")
+                lines.append(f"{i}. **{a['vessel']}** -> {a['cargo']}")
+                lines.append(f"   TCE: ${v['tce']:,.0f}/day — Profit: ${v['net_profit']:,.0f}")
 
             if best.get("market_vessel_hires"):
                 lines.append("\n**Market Vessels Hired -> Cargill Cargoes:**")
-                lines.append("| Vessel | Cargo | TCE | Hire Rate |")
-                lines.append("|--------|-------|-----|-----------|")
-                for h in best["market_vessel_hires"]:
+                for i, h in enumerate(best["market_vessel_hires"], 1):
                     hire_rate = h.get("recommended_hire_rate", h.get("hire_rate", 18000))
                     tce = h.get("tce", 0)
-                    lines.append(f"| {h['vessel']} | {h['cargo']} | ${tce:,.0f}/day | ${hire_rate:,.0f}/day |")
+                    lines.append(f"{i}. **{h['vessel']}** -> {h['cargo']}")
+                    lines.append(f"   TCE: ${tce:,.0f}/day — Hire Rate: ${hire_rate:,.0f}/day")
 
-            lines.append(f"\n**Total Profit: ${best['total_profit']:,.0f}** | Avg TCE: ${best['avg_tce']:,.0f}/day")
+            lines.append(f"\n**Total Profit: ${best['total_profit']:,.0f}**")
+            lines.append(f"**Avg TCE: ${best['avg_tce']:,.0f}/day**")
             lines.append("\n*The optimizer uses arbitrage: Cargill vessels earn more on market cargoes, while market vessels are hired at FFA rates to cover Cargill commitments.*")
             return "\n".join(lines)
 
@@ -342,12 +338,10 @@ def _fallback_response(message: str, service) -> str:
     if "vessel" in lower and ("spec" in lower or "detail" in lower or "info" in lower or "list" in lower or "all" in lower):
         vessels = service.get_vessels(include_market=True)
         if vessels:
-            lines = ["**All Vessels (4 Cargill + 11 Market):**\n"]
-            lines.append("| Vessel | DWT | Speed (Eco) | Port | Type |")
-            lines.append("|--------|-----|-------------|------|------|")
+            lines = ["**All Vessels (4 Cargill + 11 Market)**\n"]
             for v in vessels:
                 vtype = "Cargill" if v["is_cargill"] else "Market"
-                lines.append(f"| {v['name']} | {v['dwt']:,} | {v['speed_laden_eco']}kn | {v['current_port']} | {vtype} |")
+                lines.append(f"- **{v['name']}** ({vtype}) — {v['dwt']:,} DWT, eco {v['speed_laden_eco']}kn, at {v['current_port']}")
             return "\n".join(lines)
 
     # Check for specific vessel name queries
@@ -377,12 +371,10 @@ def _fallback_response(message: str, service) -> str:
     if "cargo" in lower and ("spec" in lower or "detail" in lower or "info" in lower or "list" in lower or "all" in lower):
         cargoes = service.get_cargoes(include_market=True)
         if cargoes:
-            lines = ["**All Cargoes (3 Cargill + 8 Market):**\n"]
-            lines.append("| Cargo | Customer | Qty | Route | Type |")
-            lines.append("|-------|----------|-----|-------|------|")
+            lines = ["**All Cargoes (3 Cargill + 8 Market)**\n"]
             for c in cargoes:
                 ctype = "Cargill" if c["is_cargill"] else "Market"
-                lines.append(f"| {c['name'][:35]} | {c['customer']} | {c['quantity']:,} | {c['load_port']}->{c['discharge_port']} | {ctype} |")
+                lines.append(f"- **{c['name']}** ({ctype}) — {c['quantity']:,} MT, {c['load_port']} -> {c['discharge_port']}")
             return "\n".join(lines)
 
     # Check for specific cargo name queries
@@ -409,38 +401,32 @@ def _fallback_response(message: str, service) -> str:
     if "bunker" in lower or ("fuel" in lower and "sensitivity" in lower):
         data = service.get_bunker_sensitivity()
         if data:
-            lines = ["**Bunker Price Sensitivity (15 data points, -20% to +50%):**\n"]
-            lines.append("| Bunker Change | Total Profit | Avg TCE | Assignments |")
-            lines.append("|---------------|-------------|---------|-------------|")
+            lines = ["**Bunker Price Sensitivity (15 data points, -20% to +50%)**\n"]
             for row in data:
                 pct = row.get("bunker_change_pct", 0)
-                lines.append(f"| {pct:+.1f}% | ${row['total_profit']:,.0f} | ${row['avg_tce']:,.0f} | {row.get('n_assignments', '')} |")
+                lines.append(f"- **{pct:+.1f}%** — Profit: ${row['total_profit']:,.0f}, Avg TCE: ${row['avg_tce']:,.0f}/day")
             return "\n".join(lines)
 
     # --- China delay sensitivity ---
     if "china" in lower and "delay" in lower:
         data = service.get_china_delay_sensitivity()
         if data:
-            lines = ["**China Port Delay Sensitivity (0-15 days):**\n"]
-            lines.append("| Delay Days | Total Profit | Avg TCE | Assignments |")
-            lines.append("|------------|-------------|---------|-------------|")
+            lines = ["**China Port Delay Sensitivity (0-15 days)**\n"]
             for row in data[::2]:  # Show every other point for readability
-                lines.append(f"| {row['port_delay_days']:.1f} | ${row['total_profit']:,.0f} | ${row['avg_tce']:,.0f} | {row.get('n_assignments', '')} |")
+                lines.append(f"- **{row['port_delay_days']:.1f} days** — Profit: ${row['total_profit']:,.0f}, Avg TCE: ${row['avg_tce']:,.0f}/day")
             return "\n".join(lines)
 
     # --- Port delay / congestion queries ---
     if "delay" in lower or "port" in lower or "congestion" in lower:
         delays = service.get_ml_delays()
         if delays:
-            lines = ["**ML-Predicted Port Delays:**\n"]
-            lines.append("| Port | Delay | Confidence | Level |")
-            lines.append("|------|-------|------------|-------|")
+            lines = ["**ML-Predicted Port Delays**\n"]
             for d in delays:
-                lines.append(
-                    f"| {d['port']} | {d.get('predicted_delay_days', d.get('predicted_delay', 0)):.1f}d | "
-                    f"{d.get('confidence_lower', 0):.1f}-{d.get('confidence_upper', 0):.1f}d | "
-                    f"{d.get('congestion_level', 'unknown')} |"
-                )
+                delay_val = d.get('predicted_delay_days', d.get('predicted_delay', 0))
+                level = d.get('congestion_level', 'unknown')
+                conf_lo = d.get('confidence_lower', 0)
+                conf_hi = d.get('confidence_upper', 0)
+                lines.append(f"- **{d['port']}** — {delay_val:.1f} days delay ({level}), range {conf_lo:.1f}-{conf_hi:.1f} days")
             return "\n".join(lines)
 
     # --- Voyage matrix / all voyages ---
@@ -448,24 +434,22 @@ def _fallback_response(message: str, service) -> str:
         voyages = service.get_all_voyages()
         if voyages:
             sorted_voyages = sorted(voyages, key=lambda x: -x["tce"])
-            lines = [f"**Voyage Matrix (Top 10 by TCE, {len(voyages)} total combinations):**\n"]
-            lines.append("| Vessel | Cargo | TCE | Profit | Days | Feasible |")
-            lines.append("|--------|-------|-----|--------|------|----------|")
-            for v in sorted_voyages[:10]:
-                feas = "Yes" if v["can_make_laycan"] else "No"
-                lines.append(f"| {v['vessel']} | {v['cargo'][:30]} | ${v['tce']:,.0f} | ${v['net_profit']:,.0f} | {v['total_days']:.1f} | {feas} |")
+            lines = [f"**Top 10 Voyages by TCE** ({len(voyages)} total combinations)\n"]
+            for i, v in enumerate(sorted_voyages[:10], 1):
+                feas = "yes" if v["can_make_laycan"] else "no"
+                lines.append(f"{i}. **{v['vessel']}** -> {v['cargo']}")
+                lines.append(f"   TCE: ${v['tce']:,.0f}/day — Profit: ${v['net_profit']:,.0f} — {v['total_days']:.1f} days — Laycan: {feas}")
             return "\n".join(lines)
 
     # --- Compare voyages ---
     if "compare" in lower:
         voyages = service.get_all_voyages()
         if voyages:
-            lines = ["**Voyage Comparison (Top 6 by TCE):**\n"]
-            lines.append("| Vessel | Cargo | TCE | Profit | Feasible |")
-            lines.append("|--------|-------|-----|--------|----------|")
-            for v in sorted(voyages, key=lambda x: -x["tce"])[:6]:
-                feas = "Yes" if v["can_make_laycan"] else "No"
-                lines.append(f"| {v['vessel']} | {v['cargo'][:30]} | ${v['tce']:,.0f} | ${v['net_profit']:,.0f} | {feas} |")
+            lines = ["**Voyage Comparison (Top 6 by TCE)**\n"]
+            for i, v in enumerate(sorted(voyages, key=lambda x: -x["tce"])[:6], 1):
+                feas = "yes" if v["can_make_laycan"] else "no"
+                lines.append(f"{i}. **{v['vessel']}** -> {v['cargo']}")
+                lines.append(f"   TCE: ${v['tce']:,.0f}/day — Profit: ${v['net_profit']:,.0f} — Laycan: {feas}")
             return "\n".join(lines)
 
     # --- Tipping points ---
@@ -497,10 +481,8 @@ def _fallback_response(message: str, service) -> str:
             features = info.get("feature_importance", [])
             if features:
                 lines.append("\n**Top SHAP Features:**")
-                lines.append("| Rank | Feature | Importance |")
-                lines.append("|------|---------|------------|")
                 for i, f in enumerate(features[:10], 1):
-                    lines.append(f"| {i} | {f['feature']} | {f['importance']:.4f} |")
+                    lines.append(f"{i}. **{f['feature']}** — importance: {f['importance']:.4f}")
             return "\n".join(lines)
 
     # --- Default help text ---
